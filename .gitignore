@@ -1,0 +1,29 @@
+# Project files
+.Rproj.user
+.Rhistory
+.RData
+..Rcheck/
+.Rapp.history
+
+# object files
+*.o
+*.o.tmp
+*.so
+
+# exe dir
+exe
+
+# Remake files
+.remake/
+
+# Vignette files
+inst/doc
+
+# OS files
+.DS_Store
+
+# emacs backup files
+*~
+
+# junk produced when developing the python scripts
+*pycache*
