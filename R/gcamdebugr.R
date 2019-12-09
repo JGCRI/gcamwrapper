@@ -18,6 +18,7 @@ createAndInitialize <- function() {
 #' @param gcam An initialized GCAM instance
 #' @param period The GCAM model period to run up to
 #' @return GCAM instance
+#' @importFrom Rcpp cpp_object_initializer
 #' @export
 runToPeriod <- function(gcam, period) {
   gcam$runToPeriod(period)
