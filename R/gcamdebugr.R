@@ -8,7 +8,7 @@ loadModule("gcam_module", TRUE)
 #' Create GCAM instance
 #' @return GCAM instance
 #' @export
-createAndInitialize <- function() {
+create_and_initialize <- function() {
   new(gcam)
 }
 
@@ -20,7 +20,7 @@ createAndInitialize <- function() {
 #' @return GCAM instance
 #' @importFrom Rcpp cpp_object_initializer
 #' @export
-runToPeriod <- function(gcam, period) {
+run_to_period <- function(gcam, period) {
   gcam$runToPeriod(period)
 
   gcam
@@ -33,7 +33,7 @@ runToPeriod <- function(gcam, period) {
 #' @param path A GCAM fusion-ish search path to determine where to set the data.
 #' @return GCAM instance
 #' @export
-setData <- function(gcam, data, path) {
+set_data <- function(gcam, data, path) {
   gcam$setData(data, path)
 }
 
@@ -45,7 +45,7 @@ setData <- function(gcam, data, path) {
 #' @export
 #' @importFrom dplyr group_by_at vars summarize_at ungroup
 #' @importFrom magrittr %>%
-getData <- function(gcam, path) {
+get_data <- function(gcam, path) {
   data <- gcam$getData(path)
   # The data comming out of gcam is unaggregated so we will need to do that now
   # first figure out what the "value" column is, group by everything else, and summarize

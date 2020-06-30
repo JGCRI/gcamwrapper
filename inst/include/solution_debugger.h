@@ -1,6 +1,7 @@
 #ifndef __SOLUTION_DEBUGGER_H__
 #define __SOLUTION_DEBUGGER_H__
 
+#define STRICT_R_HEADERS
 #include "Rcpp.h"
 
 #include "solution/util/include/solution_info_set.h"

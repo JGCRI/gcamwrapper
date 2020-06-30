@@ -1,7 +1,17 @@
 
 CXX_STD = CXX14
 
- PKG_CPPFLAGS = -I../inst/include/ -I/Users/Pralit/models/param-reset-workspace/cvs/objects -I/Users/Pralit/models/SGM/libs/boost_1_67_0 -I/Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/include -I/Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/include/darwin -I/Users/Pralit/models/SGM/libs/tbb/include -I/Users/Pralit/models/SGM/libs/xercesc/include -DNDEBUG
+GCAM_INCLUDE = /Users/pralitp/model/emf-34-workspace/cvs/objects
+GCAM_LIB = /Users/pralitp/model/emf-34-workspace/cvs/objects/build/linux
+BOOST_INCLUDE = /Users/pralitp/model/gcam-ssp-commit/libs/boost_1_72_0
+BOOST_LIB = /Users/pralitp/model/gcam-ssp-commit/libs/boost_1_72_0/stage/lib
+XERCES_INCLUDE = /Users/pralitp/model/gcam-ssp-commit/libs/xercesc/include
+XERCES_LIB = /Users/pralitp/model/gcam-ssp-commit/libs/xercesc/lib
+JAVA_INCLUDE = /Library/Java/JavaVirtualMachines/jdk-10.0.1.jdk/Contents/Home/include
+JAVA_LIB = /Library/Java/JavaVirtualMachines/jdk-10.0.1.jdk/Contents/Home/lib/server
 
- PKG_LIBS = -Wl,-rpath,/Users/Pralit/models/SGM/libs/xercesc/lib -Wl,-rpath,/Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/jre/lib/server -Wl,-rpath,/Users/Pralit/models/SGM/libs/tbb/lib -lgcam  -L/usr/local/lib -L/Users/Pralit/models/SGM/libs/xercesc/lib -L/Users/Pralit/models/param-reset-workspace/cvs/objects/build/linux -L/Library/Java/JavaVirtualMachines/jdk1.8.0_112.jdk/Contents/Home/jre/lib/server -L/Users/Pralit/models/SGM/libs/tbb/lib  -lxerces-c -ljvm -L/Users/Pralit/models/SGM/libs/boost_1_67_0/stage/lib -Wl,-rpath,/Users/Pralit/models/SGM/libs/boost_1_67_0/stage/lib -lhector -lboost_system -lboost_filesystem   -lm
+
+PKG_CPPFLAGS = -I../inst/include/ -I$(GCAM_INCLUDE) -I$(BOOST_INCLUDE) -I$(JAVA_INCLUDE) -I$(JAVA_INCLUDE)/darwin -I$(XERCES_INCLUDE) -DNDEBUG
+
+PKG_LIBS = -Wl,-rpath,$(XERCES_LIB) -Wl,-rpath,$(JAVA_LIB) -lgcam  -L/usr/local/lib -L$(XERCES_LIB) -L$(GCAM_LIB) -L$(JAVA_LIB) -lxerces-c -ljvm -L$(BOOST_LIB) -Wl,-rpath,$(BOOST_LIB) -lhector -lboost_system -lboost_filesystem   -lm
 

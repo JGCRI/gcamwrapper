@@ -1,6 +1,7 @@
 #ifndef __GET_DATA_HELPER_H__
 #define __GET_DATA_HELPER_H__
 
+#define STRICT_R_HEADERS
 #include "Rcpp.h"
 #include <vector>
 
