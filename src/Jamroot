@@ -1,0 +1,63 @@
+# Copyright Stefan Seefeld 2016.
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
+
+import python ;
+
+if ! [ python.configured ]
+{
+  ECHO "warning: no Python configured in user-config.jam" ;
+  ECHO "warning: will use default configuration" ;
+  using python ;
+}
+
+import os ;
+local GCAM_INCLUDE = [ os.environ GCAM_INCLUDE ] ;
+local GCAM_LIB = [ os.environ GCAM_LIB ] ;
+local BOOST_INCLUDE = [ os.environ BOOST_INCLUDE ] ;
+local BOOST_LIB = [ os.environ BOOST_LIB ] ;
+local XERCES_INCLUDE = [ os.environ XERCES_INCLUDE ] ;
+local XERCES_LIB = [ os.environ XERCES_LIB ] ;
+local JAVA_INCLUDE = [ os.environ JAVA_INCLUDE ] ;
+local JAVA_LIB = [ os.environ JAVA_LIB ] ;
+# exe a : a.cpp : <include>$(SOME_LIBRARY_PATH) ;
+
+# Adjust the following if Boost.Python isn't installed in a default location
+lib boost_python : : <name>boost_python36 <search>$(BOOST_LIB) ;
+lib boost_system : : <search>$(BOOST_LIB) ;
+lib boost_filesystem : : <search>$(BOOST_LIB) ;
+lib gcam : : <search>$(GCAM_LIB) ;
+lib hector : : <search>$(GCAM_LIB) ;
+lib jvm : : <search>$(JAVA_LIB) ;
+lib xerces-c : : <search>$(XERCES_LIB) ;
+
+project
+  : requirements
+    <include>../inst/include
+    <include>$(GCAM_INCLUDE)
+    <include>$(BOOST_INCLUDE)
+    <include>$(JAVA_INCLUDE)
+    <include>$(JAVA_INCLUDE)/darwin
+    <include>$(XERCES_INCLUDE)
+    <library>gcam
+    <library>hector
+    <library>boost_python
+    <library>boost_system
+    <library>boost_filesystem
+    <library>jvm
+    <library>xerces-c
+;
+
+python-extension gcam_module : gcam.cpp : <define>NDEBUG
+    <linkflags>-Wl,-rpath,$(XERCES_LIB)
+    <linkflags>-Wl,-rpath,$(JAVA_LIB)
+    <linkflags>-Wl,-rpath,$(BOOST_LIB)
+;
+
+#build-project quickstart ;
+#build-project tutorial ;
+#if [ python.numpy ]
+#{
+#  build-project numpy ;
+#}

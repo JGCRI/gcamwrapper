@@ -1,5 +1,4 @@
-#define STRICT_R_HEADERS
-#include "Rcpp.h"
+#include "Interp.h"
 
 #include "set_data_helper.h"
 
@@ -7,29 +6,29 @@
 #include "util/base/include/gcam_data_containers.h"
 
 using namespace std;
-using namespace Rcpp;
+using namespace Interp;
 
 class RStringVecEquals : public AMatchesValue {
 public:
-  RStringVecEquals( const Rcpp::StringVector& aStr, int& row ):mStr( aStr ), mRow( row ) {}
+  RStringVecEquals( const Interp::StringVector& aStr, int& row ):mStr( aStr ), mRow( row ) {}
   virtual ~RStringVecEquals() {}
   virtual bool matchesString( const std::string& aStrToTest ) const {
     return mStr[mRow] == aStrToTest;
   }
 private:
-  const Rcpp::StringVector mStr;
+  const Interp::StringVector mStr;
   int& mRow;
 };
 
 class RIntVecEquals : public AMatchesValue {
 public:
-  RIntVecEquals( const Rcpp::IntegerVector& aInt, int& row ):mInt( aInt ), mRow( row ) {}
+  RIntVecEquals( const Interp::IntegerVector& aInt, int& row ):mInt( aInt ), mRow( row ) {}
   virtual ~RIntVecEquals() {}
   virtual bool matchesInt( const int aIntToTest ) const {
     return mInt[mRow] == aIntToTest;
   }
 private:
-  const Rcpp::IntegerVector mInt;
+  const Interp::IntegerVector mInt;
   int& mRow;
 };
 
@@ -64,7 +63,7 @@ void RSetDataHelper::processData(std::pair<unsigned int const, double>& aData) {
 }
 template<typename T>
 void RSetDataHelper::processData(T& aData) {
-  Rcpp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
+  Interp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
 }
 
 FilterStep* RSetDataHelper::parseFilterStepStr( const std::string& aFilterStepStr, int& aCol ) {

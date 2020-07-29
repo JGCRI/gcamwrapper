@@ -1,6 +1,6 @@
 #include <unistd.h>
-#define STRICT_R_HEADERS
-#include "Rcpp.h"
+
+#include "interp_interface.h"
 #include <iostream>
 
 #include "util/base/include/definitions.h"
@@ -15,12 +15,13 @@
 #include "util/base/include/xml_helper.h"
 #include "util/base/include/manage_state_variables.hpp"
 
-#include "set_data_helper.h"
-#include "get_data_helper.h"
-#include "solution_debugger.h"
+//#include "set_data_helper.h"
+//#include "get_data_helper.h"
+//#include "solution_debugger.h"
 
 using namespace std;
-using namespace Rcpp;
+//using namespace Rcpp;
+
 
 // Declared outside Main to make global.
 Scenario* scenario;
@@ -31,27 +32,32 @@ class gcam {
             int ret = chdir("exe");
             initializeScenario();
         }
+        gcam(const gcam& aOther):isInitialized(aOther.isInitialized) {
+            cout << "it's copying" << endl;
+        }
+
         void runToPeriod(const int aPeriod ) {
             if(!isInitialized) {
-                Rcpp::stop("GCAM did not successfully initialize.");
+                Interp::stop("GCAM did not successfully initialize.");
             }
             Timer timer;
 
             bool success = runner->runScenarios(aPeriod, false, timer);
             if(!success) {
-              Rcpp::warning("Failed to solve period "+util::toString(aPeriod));
+              Interp::warning("Failed to solve period "+util::toString(aPeriod));
             }
         }
+        /*
       void setData(const DataFrame& aData, const String& aHeader) {
         if(!isInitialized) {
-          Rcpp::stop("GCAM did not successfully initialize.");
+          Interp::stop("GCAM did not successfully initialize.");
         }
         RSetDataHelper helper(aData, aHeader);
         helper.run(runner->getInternalScenario());
       }
       List getData(const String& aHeader) {
         if(!isInitialized) {
-          Rcpp::stop("GCAM did not successfully initialize.");
+          Interp::stop("GCAM did not successfully initialize.");
         }
         RGetDataHelper helper(aHeader);
         return helper.run(runner->getInternalScenario());
@@ -62,6 +68,7 @@ class gcam {
         scenario->mManageStateVars = new ManageStateVariables(aPeriod);
         return SolutionDebugger::createInstance(aPeriod);
       }
+      */
 
     private:
         bool isInitialized;
@@ -89,7 +96,7 @@ class gcam {
             // Check if parsing succeeded. Non-zero return codes from main indicate
             // failure.
             if( !success ){
-                Rcpp::stop("Could not parse logger config: "+loggerFileName);
+                Interp::stop("Could not parse logger config: "+loggerFileName);
             }
 
 
@@ -109,7 +116,7 @@ class gcam {
             // Check if parsing succeeded. Non-zero return codes from main indicate
             // failure.
             if( !success ){
-                Rcpp::stop("Could not parse configuration: "+configurationFileName);
+                Interp::stop("Could not parse configuration: "+configurationFileName);
             }
 
             // Create an empty exclusion list so that any type of IScenarioRunner can be
@@ -125,7 +132,7 @@ class gcam {
             // Check if setting up the scenario, which often includes parsing,
             // succeeded.
             if( !success ){
-                Rcpp::stop("Failed to setup scenario.");
+                Interp::stop("Failed to setup scenario.");
             }
 
             // Cleanup Xerces. This should be encapsulated with an initializer object to ensure against leakage.
@@ -140,8 +147,9 @@ class gcam {
 
 };
 
+#if defined(USING_R)
 RCPP_EXPOSED_CLASS_NODECL(gcam)
-RCPP_EXPOSED_CLASS_NODECL(SolutionDebugger)
+//RCPP_EXPOSED_CLASS_NODECL(SolutionDebugger)
 RCPP_MODULE(gcam_module) {
     Rcpp::class_<gcam>("gcam")
 
@@ -153,7 +161,7 @@ RCPP_MODULE(gcam_module) {
         .method("createSolutionDebugger", &gcam::createSolutionDebugger, "create solution debugger")
         ;
 
-  Rcpp::class_<SolutionDebugger>("SolutionDebugger")
+  /*Rcpp::class_<SolutionDebugger>("SolutionDebugger")
 
   .method("getPrices",        &SolutionDebugger::getPrices,         "getPrices")
   .method("getFX", &SolutionDebugger::getFX, "getFX")
@@ -165,5 +173,33 @@ RCPP_MODULE(gcam_module) {
   .method("evaluate", &SolutionDebugger::evaluate, "evaluate")
   .method("evaluatePartial", &SolutionDebugger::evaluatePartial, "evaluatePartial")
   .method("calcDerivative", &SolutionDebugger::calcDerivative, "calcDerivative")
-  ;
+  ;*/
 }
+#elif defined(PY_VERSION_HEX)
+using namespace boost::python;
+BOOST_PYTHON_MODULE(gcam_module) {
+    class_<gcam>("gcam", init<>())
+
+        .def("runToPeriod",        &gcam::runToPeriod,         "run to model period")
+        //.def("setData", &gcam::setData, "set data")
+        //.def("getData", &gcam::getData, "get data")
+        //.def("createSolutionDebugger", &gcam::createSolutionDebugger, "create solution debugger")
+        ;
+
+    /*
+  class_<SolutionDebugger>("SolutionDebugger", no_init)
+
+  .def("getPrices",        &SolutionDebugger::getPrices,         "getPrices")
+  .def("getFX", &SolutionDebugger::getFX, "getFX")
+  .def("getSupply", &SolutionDebugger::getSupply, "getSupply")
+  .def("getDemand", &SolutionDebugger::getDemand, "getDemand")
+  .def("getPriceScaleFactor", &SolutionDebugger::getPriceScaleFactor, "getPriceScaleFactor")
+  .def("getQuantityScaleFactor", &SolutionDebugger::getQuantityScaleFactor, "getQuantityScaleFactor")
+  .def("setPrices", &SolutionDebugger::setPrices, "setPrices")
+  .def("evaluate", &SolutionDebugger::evaluate, "evaluate")
+  .def("evaluatePartial", &SolutionDebugger::evaluatePartial, "evaluatePartial")
+  .def("calcDerivative", &SolutionDebugger::calcDerivative, "calcDerivative")
+  ;
+  */
+}
+#endif
