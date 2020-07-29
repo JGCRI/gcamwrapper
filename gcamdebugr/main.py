@@ -1,5 +1,5 @@
 
 
-if __name__ == '__main__':
-
+def hello():
+    """Hello world function"""
     print('Hello GCAM!')
