@@ -6,6 +6,7 @@
 
 #include "solution/util/include/solution_info_set.h"
 #include "solution/util/include/edfun.hpp"
+#include <Eigen/Core>
 
 class World;
 class Marketplace;
@@ -36,8 +37,12 @@ public:
 
   Rcpp::NumericMatrix calcDerivative();
 
+  Rcpp::NumericVector getSlope();
+
+  void setSlope(const Rcpp::NumericVector& aDX);
+
 private:
-  using UBVECTOR = boost::numeric::ublas::vector<double>;
+  using UBVECTOR = Eigen::VectorXd;
 
   World* world;
   Marketplace* marketplace;

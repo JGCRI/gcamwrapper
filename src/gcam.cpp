@@ -28,7 +28,7 @@ Scenario* scenario;
 class gcam {
     public:
         gcam():isInitialized(false) {
-            int ret = chdir("exe");
+            int ret = chdir("/gcam/exe");
             initializeScenario();
         }
         void runToPeriod(const int aPeriod ) {
@@ -165,5 +165,7 @@ RCPP_MODULE(gcam_module) {
   .method("evaluate", &SolutionDebugger::evaluate, "evaluate")
   .method("evaluatePartial", &SolutionDebugger::evaluatePartial, "evaluatePartial")
   .method("calcDerivative", &SolutionDebugger::calcDerivative, "calcDerivative")
+  .method("getSlope", &SolutionDebugger::getSlope, "getSlope")
+  .method("setSlope", &SolutionDebugger::setSlope, "setSlope")
   ;
 }
