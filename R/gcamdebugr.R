@@ -8,8 +8,8 @@ loadModule("gcam_module", TRUE)
 #' Create GCAM instance
 #' @return GCAM instance
 #' @export
-create_and_initialize <- function() {
-  new(gcam)
+create_and_initialize <- function(configuration = "configuration.xml") {
+  new(gcam, configuration)
 }
 
 #' Run model period

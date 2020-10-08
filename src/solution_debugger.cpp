@@ -144,7 +144,8 @@ NumericVector SolutionDebugger::evaluatePartial(const double aPrice, const int a
 }
 
 NumericMatrix SolutionDebugger::calcDerivative() {
-  using UBMATRIX = Eigen::MatrixXd;
+  //using UBMATRIX = Eigen::MatrixXd;
+    using UBMATRIX = boost::numeric::ublas::matrix<double>;
   UBMATRIX jac(nsolv,nsolv);
   fdjac(F, x, fx, jac, true);
   NumericMatrix jacRet(nsolv, nsolv);
@@ -162,7 +163,7 @@ NumericMatrix SolutionDebugger::calcDerivative() {
 NumericVector SolutionDebugger::getSlope() {
   NumericVector slope(nsolv);
   for(int i = 0; i < nsolv; ++i) {
-    slope[i] = solnInfoSet.getSolvable(i).getCorrectionSlope();
+    //slope[i] = solnInfoSet.getSolvable(i).getCorrectionSlope();
   }
   return slope;
 }

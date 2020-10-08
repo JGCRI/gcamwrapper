@@ -42,7 +42,8 @@ public:
   void setSlope(const Rcpp::NumericVector& aDX);
 
 private:
-  using UBVECTOR = Eigen::VectorXd;
+  //using UBVECTOR = Eigen::VectorXd;
+  using UBVECTOR = boost::numeric::ublas::vector<double>;
 
   World* world;
   Marketplace* marketplace;

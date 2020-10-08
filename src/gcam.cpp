@@ -27,9 +27,9 @@ Scenario* scenario;
 
 class gcam {
     public:
-        gcam():isInitialized(false) {
+        gcam(string configurationArg):isInitialized(false) {
             int ret = chdir("/gcam/exe");
-            initializeScenario();
+            initializeScenario(configurationArg);
         }
         void runToPeriod(const int aPeriod ) {
             if(!isInitialized) {
@@ -67,8 +67,8 @@ class gcam {
         bool isInitialized;
         LoggerFactoryWrapper loggerFactoryWrapper;
         auto_ptr<IScenarioRunner> runner;
-        void initializeScenario() {
-            string configurationArg = "configuration.xml";
+        void initializeScenario(string configurationArg) {
+            //string configurationArg = "configuration.xml";
             string loggerFactoryArg = "log_conf.xml";
             // Parse any command line arguments.  Can override defaults with command lone args
             //parseArgs( argc, argv, configurationArg, loggerFactoryArg );
@@ -145,7 +145,7 @@ RCPP_EXPOSED_CLASS_NODECL(SolutionDebugger)
 RCPP_MODULE(gcam_module) {
     Rcpp::class_<gcam>("gcam")
 
-        .constructor("constructor")
+        .constructor<string>("constructor")
 
         .method("runToPeriod",        &gcam::runToPeriod,         "run to model period")
         .method("setData", &gcam::setData, "set data")
