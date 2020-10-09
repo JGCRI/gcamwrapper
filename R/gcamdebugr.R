@@ -6,10 +6,13 @@ NULL
 loadModule("gcam_module", TRUE)
 
 #' Create GCAM instance
+#' @param configuration The configuration XML to use.
+#' @param workdir The working directory to use which may be important if the
+#' paths in \code{configuration} are relative.
 #' @return GCAM instance
 #' @export
-create_and_initialize <- function() {
-  new(gcam)
+create_and_initialize <- function(configuration = "configuration.xml", workdir = ".") {
+  new(gcam, configuration, workdir)
 }
 
 #' Run model period
