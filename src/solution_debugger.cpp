@@ -7,6 +7,7 @@
 #include "solution/util/include/solution_info_param_parser.h"
 #include "marketplace/include/marketplace.h"
 #include "solution/util/include/fdjac.hpp"
+#include "util/base/include/manage_state_variables.hpp"
 
 using namespace Rcpp;
 
@@ -104,6 +105,12 @@ void SolutionDebugger::setPrices(const NumericVector& aPrices, const bool aScale
 }
 
 NumericVector SolutionDebugger::evaluate(const NumericVector& aPrices, const bool aScaled, const bool aResetAfterCalc) {
+  UBVECTOR x_restore;
+  UBVECTOR fx_restore = fx;
+  if(aResetAfterCalc) {
+    x_restore = x;
+    fx_restore = fx;
+  }
   setPrices(aPrices, aScaled);
 
   if(aResetAfterCalc) {
@@ -111,25 +118,37 @@ NumericVector SolutionDebugger::evaluate(const NumericVector& aPrices, const boo
     F.partial(1);
   }
   F(x,fx);
+  NumericVector fx_ret = getFX();
   if(aResetAfterCalc) {
     F.partial(-1);
+    x = x_restore;
+    fx = fx_restore;
   }
 
-  return getFX();
+  return fx_ret;
 }
 
 NumericVector SolutionDebugger::evaluatePartial(const double aPrice, const int aIndex, const bool aScaled) {
+  double x_restore = x[aIndex];
   x[aIndex] = aScaled ? aPrice : aPrice / priceScaleFactor[aIndex];
   scenario->getManageStateVariables()->setPartialDeriv(true);
   F.partial(aIndex);
+  UBVECTOR fx_restore = fx;
   F(x,fx,aIndex);
   F.partial(-1);
+  x[aIndex] = x_restore;
+  NumericVector fx_ret = getFX();
+  fx = fx_restore;
 
-  return getFX();
+  return fx_ret;
 }
 
 NumericMatrix SolutionDebugger::calcDerivative() {
+#ifdef USE_EIGEN
+  using UBMATRIX = Eigen::MatrixXd;
+#else
   using UBMATRIX = boost::numeric::ublas::matrix<double>;
+#endif
   UBMATRIX jac(nsolv,nsolv);
   fdjac(F, x, fx, jac, true);
   NumericMatrix jacRet(nsolv, nsolv);
@@ -143,3 +162,20 @@ NumericMatrix SolutionDebugger::calcDerivative() {
 
   return jacRet;
 }
+
+NumericVector SolutionDebugger::getSlope() {
+  NumericVector slope(nsolv);
+  for(int i = 0; i < nsolv; ++i) {
+    //slope[i] = solnInfoSet.getSolvable(i).getCorrectionSlope();
+  }
+  return slope;
+}
+
+void SolutionDebugger::setSlope(const NumericVector& aDX) {
+  UBVECTOR dx(nsolv);
+  for(int i = 0; i < nsolv; ++i) {
+    dx[i] = aDX[i];
+  }
+  F.setSlope(dx);
+}
+

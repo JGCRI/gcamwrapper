@@ -28,9 +28,12 @@ Scenario* scenario;
 
 class gcam {
     public:
-        gcam():isInitialized(false) {
-            int ret = chdir("exe");
-            //initializeScenario();
+        gcam(string aConfiguration, string aWorkDir):isInitialized(false) {
+            int success = chdir(aWorkDir.c_str());
+            if(!success) {
+                Interp::stop("Could not set working directory to: "+aWorkDir);
+            }
+            initializeScenario(aConfiguration);
         }
         gcam(const gcam& aOther):isInitialized(aOther.isInitialized) {
             cout << "it's copying" << endl;
@@ -106,11 +109,8 @@ class gcam {
         bool isInitialized;
         LoggerFactoryWrapper loggerFactoryWrapper;
         auto_ptr<IScenarioRunner> runner;
-        void initializeScenario() {
-            string configurationArg = "configuration.xml";
+        void initializeScenario(string configurationArg) {
             string loggerFactoryArg = "log_conf.xml";
-            // Parse any command line arguments.  Can override defaults with command lone args
-            //parseArgs( argc, argv, configurationArg, loggerFactoryArg );
 
             // Add OS dependent prefixes to the arguments.
             const string configurationFileName = configurationArg;
@@ -122,7 +122,6 @@ class gcam {
 
 
             // Initialize the LoggerFactory
-            //sLoggerFactoryWrapper loggerFactoryWrapper;
             bool success = XMLHelper<void>::parseXML( loggerFileName, &loggerFactoryWrapper );
 
             // Check if parsing succeeded. Non-zero return codes from main indicate
@@ -185,7 +184,7 @@ RCPP_EXPOSED_CLASS_NODECL(gcam)
 RCPP_MODULE(gcam_module) {
     Rcpp::class_<gcam>("gcam")
 
-        .constructor("constructor")
+        .constructor<string, string>("constructor")
 
         .method("runToPeriod",        &gcam::runToPeriod,         "run to model period")
         .method("setData", &gcam::setData, "set data")
@@ -205,13 +204,15 @@ RCPP_MODULE(gcam_module) {
   .method("evaluate", &SolutionDebugger::evaluate, "evaluate")
   .method("evaluatePartial", &SolutionDebugger::evaluatePartial, "evaluatePartial")
   .method("calcDerivative", &SolutionDebugger::calcDerivative, "calcDerivative")
+  .method("getSlope", &SolutionDebugger::getSlope, "getSlope")
+  .method("setSlope", &SolutionDebugger::setSlope, "setSlope")
   ;*/
 }
 #elif defined(PY_VERSION_HEX)
 using namespace boost::python;
 BOOST_PYTHON_MODULE(gcam_module) {
     boost::python::numpy::initialize();
-    class_<gcam>("gcam", init<>())
+    class_<gcam>("gcam", init<string, string>())
 
         .def("runToPeriod",        &gcam::runToPeriod,         "run to model period")
         .def("setData", &gcam::setData, "set data")
@@ -232,6 +233,8 @@ BOOST_PYTHON_MODULE(gcam_module) {
   .def("evaluate", &SolutionDebugger::evaluate, "evaluate")
   .def("evaluatePartial", &SolutionDebugger::evaluatePartial, "evaluatePartial")
   .def("calcDerivative", &SolutionDebugger::calcDerivative, "calcDerivative")
+  .def("getSlope", &SolutionDebugger::getSlope, "getSlope")
+  .def("setSlope", &SolutionDebugger::setSlope, "setSlope")
   ;
   */
 }
