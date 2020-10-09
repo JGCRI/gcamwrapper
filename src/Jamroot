@@ -25,6 +25,7 @@ local JAVA_LIB = [ os.environ JAVA_LIB ] ;
 
 # Adjust the following if Boost.Python isn't installed in a default location
 lib boost_python : : <name>boost_python36 <search>$(BOOST_LIB) ;
+lib boost_numpy : : <name>boost_numpy36 <search>$(BOOST_LIB) ;
 lib boost_system : : <search>$(BOOST_LIB) ;
 lib boost_filesystem : : <search>$(BOOST_LIB) ;
 lib gcam : : <search>$(GCAM_LIB) ;
@@ -43,6 +44,7 @@ project
     <library>gcam
     <library>hector
     <library>boost_python
+    <library>boost_numpy
     <library>boost_system
     <library>boost_filesystem
     <library>jvm

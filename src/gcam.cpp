@@ -30,7 +30,7 @@ class gcam {
     public:
         gcam():isInitialized(false) {
             int ret = chdir("exe");
-            initializeScenario();
+            //initializeScenario();
         }
         gcam(const gcam& aOther):isInitialized(aOther.isInitialized) {
             cout << "it's copying" << endl;
@@ -47,22 +47,54 @@ class gcam {
               Interp::warning("Failed to solve period "+util::toString(aPeriod));
             }
         }
-        /*
-      void setData(const DataFrame& aData, const String& aHeader) {
+      void setData(const Interp::DataFrame& aData, const std::string& aHeader) {
+          std::cout << aHeader << std::endl;
+          namespace bp = boost::python;
+          namespace bnp = boost::python::numpy;
+          Interp::NumericVector vec = Interp::getDataFrameCol(aData, 1);//bp::extract<Interp::NumericVector>(aData.values()[1]);
+          //Interp::NumericVector vec = bnp::ndarray::from_object(aData.values()[1], bnp::dtype::get_builtin<double>());
+          std::cout << (vec.get_dtype().get_itemsize()) << std::endl;
+          double* d = reinterpret_cast<double*>(vec.get_data());
+          cout << d[0]<< " " << d[1] << endl;
+          Interp::StringVector strVec = Interp::getDataFrameCol(aData, 0);//bp::extract<Interp::NumericVector>(aData.values()[0]);
+          std::cout << (strVec.get_dtype().get_itemsize()) << std::endl;
+          cout << bp::extract<char const *>(bp::str(strVec.get_dtype())) << endl;
+          bp::str* s = reinterpret_cast<bp::str*>(strVec.get_data());
+          cout << bp::extract<char const*>(s[0]) << " " << bp::extract<char const *>(s[1]) << endl;
+          if(s[0] == "coal") { 
+              cout << "Does match!" << endl;
+          }
+          /*
         if(!isInitialized) {
           Interp::stop("GCAM did not successfully initialize.");
         }
-        RSetDataHelper helper(aData, aHeader);
-        helper.run(runner->getInternalScenario());
+        */
+        //RSetDataHelper helper(aData, aHeader);
+        //helper.run(runner->getInternalScenario());
       }
-      List getData(const String& aHeader) {
+      Interp::DataFrame getData(const std::string& aHeader) {
+          /*
         if(!isInitialized) {
           Interp::stop("GCAM did not successfully initialize.");
         }
         RGetDataHelper helper(aHeader);
         return helper.run(runner->getInternalScenario());
+        */
+          std::vector<std::string> names = { "sector", "value" };
+          Interp::StringVector sectorVec = Interp::createVector<std::string, Interp::StringVector>(2);
+          //Interp::bp::str* s = reinterpret_cast<Interp::bp::str*>(sectorVec.get_data());
+          sectorVec[0] = std::string("coal");
+          sectorVec[1] = std::string("gas");
+          Interp::NumericVector valueVec = Interp::createVector<double, Interp::NumericVector>(2);
+          valueVec[0] = 1.0;
+          valueVec[1] = 2.0;
+          Interp::DataFrame ret = Interp::createDataFrame(names);
+          ret["sector"] = sectorVec;
+          ret["value"] = valueVec;
+          return ret;
       }
 
+      /*
       SolutionDebugger createSolutionDebugger(const int aPeriod) {
         delete scenario->mManageStateVars;
         scenario->mManageStateVars = new ManageStateVariables(aPeriod);
@@ -178,11 +210,12 @@ RCPP_MODULE(gcam_module) {
 #elif defined(PY_VERSION_HEX)
 using namespace boost::python;
 BOOST_PYTHON_MODULE(gcam_module) {
+    boost::python::numpy::initialize();
     class_<gcam>("gcam", init<>())
 
         .def("runToPeriod",        &gcam::runToPeriod,         "run to model period")
-        //.def("setData", &gcam::setData, "set data")
-        //.def("getData", &gcam::getData, "get data")
+        .def("setData", &gcam::setData, "set data")
+        .def("getData", &gcam::getData, "get data")
         //.def("createSolutionDebugger", &gcam::createSolutionDebugger, "create solution debugger")
         ;
 
