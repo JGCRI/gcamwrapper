@@ -27,9 +27,12 @@ Scenario* scenario;
 
 class gcam {
     public:
-        gcam(string configurationArg):isInitialized(false) {
-            int ret = chdir("/gcam/exe");
-            initializeScenario(configurationArg);
+        gcam(string aConfiguration, string aWorkDir):isInitialized(false) {
+            int success = chdir(aWorkDir);
+            if(!success) {
+                Rcpp::stop("Could not set working directory to: "+aWorkDir);
+            }
+            initializeScenario(aConfiguration);
         }
         void runToPeriod(const int aPeriod ) {
             if(!isInitialized) {
@@ -68,10 +71,7 @@ class gcam {
         LoggerFactoryWrapper loggerFactoryWrapper;
         auto_ptr<IScenarioRunner> runner;
         void initializeScenario(string configurationArg) {
-            //string configurationArg = "configuration.xml";
             string loggerFactoryArg = "log_conf.xml";
-            // Parse any command line arguments.  Can override defaults with command lone args
-            //parseArgs( argc, argv, configurationArg, loggerFactoryArg );
 
             // Add OS dependent prefixes to the arguments.
             const string configurationFileName = configurationArg;
@@ -83,7 +83,6 @@ class gcam {
 
 
             // Initialize the LoggerFactory
-            //sLoggerFactoryWrapper loggerFactoryWrapper;
             bool success = XMLHelper<void>::parseXML( loggerFileName, &loggerFactoryWrapper );
 
             // Check if parsing succeeded. Non-zero return codes from main indicate
@@ -145,7 +144,7 @@ RCPP_EXPOSED_CLASS_NODECL(SolutionDebugger)
 RCPP_MODULE(gcam_module) {
     Rcpp::class_<gcam>("gcam")
 
-        .constructor<string>("constructor")
+        .constructor<string, string>("constructor")
 
         .method("runToPeriod",        &gcam::runToPeriod,         "run to model period")
         .method("setData", &gcam::setData, "set data")

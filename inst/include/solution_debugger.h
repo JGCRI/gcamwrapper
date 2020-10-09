@@ -6,7 +6,9 @@
 
 #include "solution/util/include/solution_info_set.h"
 #include "solution/util/include/edfun.hpp"
+#ifdef USE_EIGEN
 #include <Eigen/Core>
+#endif
 
 class World;
 class Marketplace;
@@ -42,8 +44,11 @@ public:
   void setSlope(const Rcpp::NumericVector& aDX);
 
 private:
-  //using UBVECTOR = Eigen::VectorXd;
+#ifdef USE_EIGEN
+  using UBVECTOR = Eigen::VectorXd;
+#else
   using UBVECTOR = boost::numeric::ublas::vector<double>;
+#endif
 
   World* world;
   Marketplace* marketplace;
