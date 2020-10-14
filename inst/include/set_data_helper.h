@@ -13,7 +13,7 @@ public:
   SetDataHelper(const Interp::DataFrame& aData, const std::string& aHeader):
       mData(aData),
       mRow(0),
-      mDataVector(Interp::getDataFrameAt(aData, -1)),
+      mDataVector(Interp::getDataFrameAt<Interp::NumericVector>(aData, -1)),
       mFilterSteps(parseFilterString(aHeader))
   {
   }

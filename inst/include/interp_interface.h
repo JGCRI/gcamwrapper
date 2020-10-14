@@ -25,7 +25,58 @@ class gcam_exception : public std::exception {
 };
 
 #if defined(USING_R)
-namespace Interp = Rcpp;
+namespace Interp {
+    using Rcpp::stop;
+    using Rcpp::warning;
+    using Rcpp::DataFrame;
+    using Rcpp::NumericVector;
+    using Rcpp::StringVector;
+    using Rcpp::IntegerVector;
+    using Rcpp::NumericMatrix;
+
+    inline DataFrame createDataFrame() {
+      return DataFrame::create();
+    }
+    template<typename VectorType>
+    inline void setDataFrameCol(DataFrame& aDataFrame, const std::string& aCol, const VectorType& aVector) {
+      aDataFrame[aCol] = aVector;
+    }
+    template<typename VectorType>
+    inline VectorType getDataFrameAt(const DataFrame& aDataFrame, const int aIndex) {
+      return aDataFrame.at(aIndex);
+    }
+    inline int getDataFrameNumRows(const DataFrame& aDataFrame) {
+      return aDataFrame.nrow();
+    }
+
+    template<typename DataType, typename VectorType>
+    VectorType createVector(int aSize) {
+      return VectorType(aSize);
+    }
+    inline NumericMatrix createNumericMatrix(int aSize) {
+      return NumericMatrix(aSize, aSize);
+    }
+    template<typename VectorType>
+    inline void setVectorNames(VectorType& aVector, const StringVector& aNames) {
+      aVector.names() = aNames;
+    }
+    inline void setMatrixNames(NumericMatrix& aMatrix, const StringVector& aNames) {
+      Rcpp::rownames(aMatrix) = aNames;
+      Rcpp::colnames(aMatrix) = aNames;
+    }
+    using Rcpp::wrap;
+    template<typename MatrixType>
+    NumericMatrix wrapMatrix(const MatrixType& aData, int aSize) {
+      NumericMatrix ret = createNumericMatrix(aSize);
+      for(int row = 0; row < aSize; ++row) {
+        for(int col = 0; col < aSize; ++col) {
+          ret.at(row, col) = aData(row, col);
+        }
+      }
+      return ret;
+    }
+}
+
 #elif defined(PY_VERSION_HEX)
 namespace Interp {
     static void stop(const std::string& aMessage) {
@@ -82,19 +133,20 @@ namespace Interp {
         DataFrame ret;
         return ret;
     }
-    inline DataFrame createDataFrame(std::vector<std::string>& aColNames) {
+    /*inline DataFrame createDataFrame(std::vector<std::string>& aColNames) {
         DataFrame ret;
         bp::tuple emptyDim = bp::make_tuple(1);
         for(std::string name : aColNames) {
             ret[name] = bnp::empty(emptyDim, bnp::dtype::get_builtin<int>());
         }
         return ret;
-    }
+    }*/
     inline void setDataFrameCol(DataFrame& aDataFrame, const std::string& aCol, const bnp::ndarray& aVector) {
         aDataFrame[aCol] = aVector;
     }
-    inline bnp::ndarray getDataFrameAt(const DataFrame& aDataFrame, const int aIndex) {
-        return bp::extract<bnp::ndarray>(aDataFrame.values()[aIndex]);
+    template<typename VecType>
+    inline VecType getDataFrameAt(const DataFrame& aDataFrame, const int aIndex) {
+        return VecType(bp::extract<bnp::ndarray>(aDataFrame.values()[aIndex]));
     }
     inline int getDataFrameNumRows(const DataFrame& aDataFrame) {
         return getDataFrameAt(aDataFrame, 0).shape(0);

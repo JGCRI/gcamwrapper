@@ -81,11 +81,11 @@ FilterStep* SetDataHelper::parseFilterStepStr( const std::string& aFilterStepStr
     AMatchesValue* matcher = 0;
     FilterStep* filterStep = 0;
     if( filterStr == "name" ) {
-      matcher = new StringVecEquals( getDataFrameAt(mData, aCol), mRow );
+      matcher = new StringVecEquals( getDataFrameAt<StringVector>(mData, aCol), mRow );
       filterStep = new FilterStep( dataName, new NamedFilter( matcher ) );
     }
     else if( filterStr == "year" ) {
-      matcher = new IntVecEquals( getDataFrameAt(mData, aCol), mRow );
+      matcher = new IntVecEquals( getDataFrameAt<IntegerVector>(mData, aCol), mRow );
       filterStep = new FilterStep( dataName, new YearFilter( matcher ) );
     }
     else {

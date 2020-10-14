@@ -161,7 +161,7 @@ class gcam {
 
 #if defined(USING_R)
 RCPP_EXPOSED_CLASS_NODECL(gcam)
-//RCPP_EXPOSED_CLASS_NODECL(SolutionDebugger)
+RCPP_EXPOSED_CLASS_NODECL(SolutionDebugger)
 RCPP_MODULE(gcam_module) {
     Rcpp::class_<gcam>("gcam")
 
