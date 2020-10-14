@@ -133,14 +133,6 @@ namespace Interp {
         DataFrame ret;
         return ret;
     }
-    /*inline DataFrame createDataFrame(std::vector<std::string>& aColNames) {
-        DataFrame ret;
-        bp::tuple emptyDim = bp::make_tuple(1);
-        for(std::string name : aColNames) {
-            ret[name] = bnp::empty(emptyDim, bnp::dtype::get_builtin<int>());
-        }
-        return ret;
-    }*/
     inline void setDataFrameCol(DataFrame& aDataFrame, const std::string& aCol, const bnp::ndarray& aVector) {
         aDataFrame[aCol] = aVector;
     }
@@ -149,7 +141,8 @@ namespace Interp {
         return VecType(bp::extract<bnp::ndarray>(aDataFrame.values()[aIndex]));
     }
     inline int getDataFrameNumRows(const DataFrame& aDataFrame) {
-        return getDataFrameAt(aDataFrame, 0).shape(0);
+        bnp::ndarray vec0 = bp::extract<bnp::ndarray>(aDataFrame.values()[0]);
+        return vec0.shape(0);
     }
 
     template<typename DataType>
