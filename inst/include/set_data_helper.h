@@ -1,29 +1,29 @@
 #ifndef __SET_DATA_HELPER_H__
 #define __SET_DATA_HELPER_H__
 
-#define STRICT_R_HEADERS
-#include "Rcpp.h"
+#include "interp_interface.h"
 #include <vector>
+#include <string>
 
 class Scenario;
-class FilterStep;
+struct FilterStep;
 
-class RSetDataHelper {
+class SetDataHelper {
 public:
-  RSetDataHelper(const Rcpp::DataFrame& aData, const Rcpp::String& aHeader):
+  SetDataHelper(const Interp::DataFrame& aData, const std::string& aHeader):
       mData(aData),
       mRow(0),
-      mDataVector(aData.at(aData.ncol()-1)),
+      mDataVector(Interp::getDataFrameAt(aData, -1)),
       mFilterSteps(parseFilterString(aHeader))
   {
   }
-  ~RSetDataHelper();
+  ~SetDataHelper();
   void run( Scenario* aScenario);
   template<typename T>
   void processData(T& aData);
 private:
-  const Rcpp::DataFrame mData;
-  const Rcpp::DoubleVector mDataVector;
+  const Interp::DataFrame mData;
+  Interp::NumericVector mDataVector;
   int mRow;
   std::vector<FilterStep*> mFilterSteps;
 

@@ -51,7 +51,7 @@ project
     <library>xerces-c
 ;
 
-python-extension gcam_module : gcam.cpp : <define>NDEBUG
+python-extension gcam_module : gcam.cpp solution_debugger.cpp set_data_helper.cpp get_data_helper.cpp : <define>NDEBUG
     <linkflags>-Wl,-rpath,$(XERCES_LIB)
     <linkflags>-Wl,-rpath,$(JAVA_LIB)
     <linkflags>-Wl,-rpath,$(BOOST_LIB)

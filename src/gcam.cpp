@@ -15,12 +15,11 @@
 #include "util/base/include/xml_helper.h"
 #include "util/base/include/manage_state_variables.hpp"
 
-//#include "set_data_helper.h"
-//#include "get_data_helper.h"
-//#include "solution_debugger.h"
+#include "set_data_helper.h"
+#include "get_data_helper.h"
+#include "solution_debugger.h"
 
 using namespace std;
-//using namespace Rcpp;
 
 
 // Declared outside Main to make global.
@@ -51,59 +50,41 @@ class gcam {
             }
         }
       void setData(const Interp::DataFrame& aData, const std::string& aHeader) {
-          std::cout << aHeader << std::endl;
-          namespace bp = boost::python;
-          namespace bnp = boost::python::numpy;
-          Interp::NumericVector vec = Interp::getDataFrameCol(aData, 1);//bp::extract<Interp::NumericVector>(aData.values()[1]);
-          //Interp::NumericVector vec = bnp::ndarray::from_object(aData.values()[1], bnp::dtype::get_builtin<double>());
-          std::cout << (vec.get_dtype().get_itemsize()) << std::endl;
-          double* d = reinterpret_cast<double*>(vec.get_data());
-          cout << d[0]<< " " << d[1] << endl;
-          Interp::StringVector strVec = Interp::getDataFrameCol(aData, 0);//bp::extract<Interp::NumericVector>(aData.values()[0]);
-          std::cout << (strVec.get_dtype().get_itemsize()) << std::endl;
-          cout << bp::extract<char const *>(bp::str(strVec.get_dtype())) << endl;
-          bp::str* s = reinterpret_cast<bp::str*>(strVec.get_data());
-          cout << bp::extract<char const*>(s[0]) << " " << bp::extract<char const *>(s[1]) << endl;
-          if(s[0] == "coal") { 
-              cout << "Does match!" << endl;
-          }
-          /*
         if(!isInitialized) {
           Interp::stop("GCAM did not successfully initialize.");
         }
-        */
-        //RSetDataHelper helper(aData, aHeader);
-        //helper.run(runner->getInternalScenario());
+        SetDataHelper helper(aData, aHeader);
+        helper.run(runner->getInternalScenario());
       }
       Interp::DataFrame getData(const std::string& aHeader) {
-          /*
         if(!isInitialized) {
           Interp::stop("GCAM did not successfully initialize.");
         }
-        RGetDataHelper helper(aHeader);
+        GetDataHelper helper(aHeader);
         return helper.run(runner->getInternalScenario());
-        */
-          std::vector<std::string> names = { "sector", "value" };
-          Interp::StringVector sectorVec = Interp::createVector<std::string, Interp::StringVector>(2);
-          //Interp::bp::str* s = reinterpret_cast<Interp::bp::str*>(sectorVec.get_data());
-          sectorVec[0] = std::string("coal");
-          sectorVec[1] = std::string("gas");
-          Interp::NumericVector valueVec = Interp::createVector<double, Interp::NumericVector>(2);
-          valueVec[0] = 1.0;
-          valueVec[1] = 2.0;
-          Interp::DataFrame ret = Interp::createDataFrame(names);
-          ret["sector"] = sectorVec;
-          ret["value"] = valueVec;
-          return ret;
       }
 
       /*
+      Interp::NumericVector test2(boost::python::numpy::ndarray ret) {
+          return test(ret);
+      }
+      Interp::NumericVector test(Interp::NumericVector ret) {
+          //Interp::NumericVector ret = Interp::createVector<double, Interp::NumericVector>(4);
+          for(int i = 0; i < 4; ++i) {
+              ret[i] = i * 1.1;
+          }
+          if(ret[0] == 0.0) {
+              cout << "Same" << endl;
+          }
+          return ret;
+      }
+      */
+
       SolutionDebugger createSolutionDebugger(const int aPeriod) {
         delete scenario->mManageStateVars;
         scenario->mManageStateVars = new ManageStateVariables(aPeriod);
         return SolutionDebugger::createInstance(aPeriod);
       }
-      */
 
     private:
         bool isInitialized;
@@ -192,7 +173,7 @@ RCPP_MODULE(gcam_module) {
         .method("createSolutionDebugger", &gcam::createSolutionDebugger, "create solution debugger")
         ;
 
-  /*Rcpp::class_<SolutionDebugger>("SolutionDebugger")
+  Rcpp::class_<SolutionDebugger>("SolutionDebugger")
 
   .method("getPrices",        &SolutionDebugger::getPrices,         "getPrices")
   .method("getFX", &SolutionDebugger::getFX, "getFX")
@@ -206,10 +187,11 @@ RCPP_MODULE(gcam_module) {
   .method("calcDerivative", &SolutionDebugger::calcDerivative, "calcDerivative")
   .method("getSlope", &SolutionDebugger::getSlope, "getSlope")
   .method("setSlope", &SolutionDebugger::setSlope, "setSlope")
-  ;*/
+  ;
 }
 #elif defined(PY_VERSION_HEX)
 using namespace boost::python;
+
 BOOST_PYTHON_MODULE(gcam_module) {
     boost::python::numpy::initialize();
     class_<gcam>("gcam", init<string, string>())
@@ -217,10 +199,12 @@ BOOST_PYTHON_MODULE(gcam_module) {
         .def("runToPeriod",        &gcam::runToPeriod,         "run to model period")
         .def("setData", &gcam::setData, "set data")
         .def("getData", &gcam::getData, "get data")
-        //.def("createSolutionDebugger", &gcam::createSolutionDebugger, "create solution debugger")
+        //.def("test", &gcam::test2, "test")
+        .def("createSolutionDebugger", &gcam::createSolutionDebugger, "create solution debugger")
         ;
-
-    /*
+    to_python_converter<Interp::NumericVector, Interp::vec_to_python<Interp::NumericVector> >();
+    to_python_converter<Interp::StringVector, Interp::vec_to_python<Interp::StringVector> >();
+    to_python_converter<Interp::IntegerVector, Interp::vec_to_python<Interp::IntegerVector> >();
   class_<SolutionDebugger>("SolutionDebugger", no_init)
 
   .def("getPrices",        &SolutionDebugger::getPrices,         "getPrices")
@@ -229,13 +213,12 @@ BOOST_PYTHON_MODULE(gcam_module) {
   .def("getDemand", &SolutionDebugger::getDemand, "getDemand")
   .def("getPriceScaleFactor", &SolutionDebugger::getPriceScaleFactor, "getPriceScaleFactor")
   .def("getQuantityScaleFactor", &SolutionDebugger::getQuantityScaleFactor, "getQuantityScaleFactor")
-  .def("setPrices", &SolutionDebugger::setPrices, "setPrices")
-  .def("evaluate", &SolutionDebugger::evaluate, "evaluate")
+  .def("setPrices", &SolutionDebugger::setPrices_wrap, "setPrices")
+  .def("evaluate", &SolutionDebugger::evaluate_wrap, "evaluate")
   .def("evaluatePartial", &SolutionDebugger::evaluatePartial, "evaluatePartial")
   .def("calcDerivative", &SolutionDebugger::calcDerivative, "calcDerivative")
   .def("getSlope", &SolutionDebugger::getSlope, "getSlope")
-  .def("setSlope", &SolutionDebugger::setSlope, "setSlope")
+  .def("setSlope", &SolutionDebugger::setSlope_wrap, "setSlope")
   ;
-  */
 }
 #endif

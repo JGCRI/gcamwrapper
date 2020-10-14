@@ -1,8 +1,7 @@
 #ifndef __SOLUTION_DEBUGGER_H__
 #define __SOLUTION_DEBUGGER_H__
 
-#define STRICT_R_HEADERS
-#include "Rcpp.h"
+#include "interp_interface.h"
 
 #include "solution/util/include/solution_info_set.h"
 #include "solution/util/include/edfun.hpp"
@@ -19,29 +18,44 @@ public:
 
   SolutionDebugger(World *w, Marketplace *m, SolutionInfoSet &sisin, int per);
 
-  Rcpp::NumericVector getPrices(const bool aScaled);
+  Interp::NumericVector getPrices(const bool aScaled);
 
-  Rcpp::NumericVector getFX();
+  Interp::NumericVector getFX();
 
-  Rcpp::NumericVector getSupply(const bool aScaled);
+  Interp::NumericVector getSupply(const bool aScaled);
 
-  Rcpp::NumericVector getDemand(const bool aScaled);
+  Interp::NumericVector getDemand(const bool aScaled);
 
-  Rcpp::NumericVector getPriceScaleFactor();
+  Interp::NumericVector getPriceScaleFactor();
 
-  Rcpp::NumericVector getQuantityScaleFactor();
+  Interp::NumericVector getQuantityScaleFactor();
 
-  void setPrices(const Rcpp::NumericVector& aPrices, const bool aScaled);
+  void setPrices(const Interp::NumericVector& aPrices, const bool aScaled);
+#ifdef IS_INTERP_PYTHON
+  inline void setPrices_wrap(const boost::python::numpy::ndarray& aPrices, const bool aScaled) {
+      setPrices(aPrices, aScaled);
+  }
+#endif
 
-  Rcpp::NumericVector evaluate(const Rcpp::NumericVector& aPrices, const bool aScaled, const bool aResetAfterCalc);
+  Interp::NumericVector evaluate(const Interp::NumericVector& aPrices, const bool aScaled, const bool aResetAfterCalc);
+#ifdef IS_INTERP_PYTHON
+  inline Interp::NumericVector evaluate_wrap(const boost::python::numpy::ndarray& aPrices, const bool aScaled, const bool aResetAfterCalc) {
+      return evaluate(aPrices, aScaled, aResetAfterCalc);
+  }
+#endif
 
-  Rcpp::NumericVector evaluatePartial(const double aPrice, const int aIndex, const bool aScaled);
+  Interp::NumericVector evaluatePartial(const double aPrice, const int aIndex, const bool aScaled);
 
-  Rcpp::NumericMatrix calcDerivative();
+  Interp::NumericMatrix calcDerivative();
 
-  Rcpp::NumericVector getSlope();
+  Interp::NumericVector getSlope();
 
-  void setSlope(const Rcpp::NumericVector& aDX);
+  void setSlope(const Interp::NumericVector& aDX);
+#ifdef IS_INTERP_PYTHON
+  inline void setSlope_wrap(const boost::python::numpy::ndarray& aDX) {
+      setSlope(aDX);
+  }
+#endif
 
 private:
 #ifdef USE_EIGEN
@@ -58,9 +72,9 @@ private:
   LogEDFun F;
   UBVECTOR x;
   UBVECTOR fx;
-  Rcpp::StringVector marketNames;
-  Rcpp::NumericVector priceScaleFactor;
-  Rcpp::NumericVector quantityScaleFactor;
+  Interp::StringVector marketNames;
+  Interp::NumericVector priceScaleFactor;
+  Interp::NumericVector quantityScaleFactor;
 };
 
 #endif // __SOLUTION_DEBUGGER_H__

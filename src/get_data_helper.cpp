@@ -1,5 +1,4 @@
-#define STRICT_R_HEADERS
-#include "Rcpp.h"
+#include "interp_interface.h"
 
 #include "get_data_helper.h"
 
@@ -7,7 +6,7 @@
 #include "util/base/include/gcam_data_containers.h"
 
 using namespace std;
-using namespace Rcpp;
+using namespace Interp;
 
 class MatchesAny : public AMatchesValue {
 public:
@@ -28,7 +27,7 @@ public:
         delete mToWrap;
     }
     virtual void recordPath() = 0;
-    virtual void updateList(List& aList, size_t aCol) const = 0;
+    virtual void updateDataFrame(DataFrame& aDataFrame, const string& aCol) const = 0;
 
 protected:
     AMatchesValue* mToWrap;
@@ -49,8 +48,8 @@ public:
     virtual void recordPath() {
         mData.push_back(mCurrValue);
     }
-    virtual void updateList(List& aList, size_t aCol) const {
-        aList[aCol] = Rcpp::wrap(mData);
+    virtual void updateDataFrame(DataFrame& aDataFrame, const string& aCol) const {
+        aDataFrame[aCol] = Interp::wrap(mData);
     }
     private:
     string mCurrValue;
@@ -72,35 +71,30 @@ public:
     virtual void recordPath() {
         mData.push_back(mCurrValue);
     }
-    virtual void updateList(List& aList, size_t aCol) const {
-        aList[aCol] = Rcpp::wrap(mData);
+    virtual void updateDataFrame(DataFrame& aDataFrame, const string& aCol) const {
+        aDataFrame[aCol] = Interp::wrap(mData);
     }
     private:
     int mCurrValue;
     vector<int> mData;
 };
 
-List RGetDataHelper::run(Scenario* aScenario) {
-  GCAMFusion<RGetDataHelper> fusion(*this, mFilterSteps);
+DataFrame GetDataHelper::run(Scenario* aScenario) {
+  GCAMFusion<GetDataHelper> fusion(*this, mFilterSteps);
   fusion.startFilter(aScenario);
-  size_t nCol = mYearVector.empty() ? mPathTracker.size() + 1 : mPathTracker.size() + 2;
-  List ret(nCol);
-  ret.attr("class") = "data.frame";
-  ret.attr("names") = mColNames;
-  Rcpp::IntegerVector rnms(mDataVector.size()); std::iota(rnms.begin(), rnms.end(), 1);
-  ret.attr("row.names") = rnms;
+  DataFrame ret = Interp::createDataFrame();
   size_t i = 0;
   for(i = 0; i < mPathTracker.size(); ++i) {
-      mPathTracker[i]->updateList(ret, i);
+      mPathTracker[i]->updateDataFrame(ret, mColNames[i]);
   }
-  ret[i++] = Rcpp::wrap(mDataVector);
+  ret[mColNames[i++]] = Interp::wrap(mDataVector);
   if(!mYearVector.empty()) {
-      ret[i] = Rcpp::wrap(mYearVector);
+      ret[mColNames[i]] = Interp::wrap(mYearVector);
   }
   return ret;
 }
 
-RGetDataHelper::~RGetDataHelper() {
+GetDataHelper::~GetDataHelper() {
     // note mPathTracker's memory is managed by mFilterSteps
   for(auto step : mFilterSteps) {
     delete step;
@@ -108,68 +102,68 @@ RGetDataHelper::~RGetDataHelper() {
 }
 
 template<>
-void RGetDataHelper::processData(double& aData) {
+void GetDataHelper::processData(double& aData) {
     mDataVector.push_back(aData);
     for(auto path: mPathTracker) {
         path->recordPath();
     }
 }
 template<>
-void RGetDataHelper::processData(Value& aData) {
+void GetDataHelper::processData(Value& aData) {
     mDataVector.push_back(aData);
     for(auto path: mPathTracker) {
         path->recordPath();
     }
 }
 template<>
-void RGetDataHelper::processData(int& aData) {
+void GetDataHelper::processData(int& aData) {
     mDataVector.push_back(aData);
     for(auto path: mPathTracker) {
         path->recordPath();
     }
 }
 template<>
-void RGetDataHelper::processData(std::vector<int>& aData) {
+void GetDataHelper::processData(std::vector<int>& aData) {
     vectorDataHelper(aData);
 }
 template<>
-void RGetDataHelper::processData(std::vector<double>& aData) {
+void GetDataHelper::processData(std::vector<double>& aData) {
     vectorDataHelper(aData);
 }
 template<>
-void RGetDataHelper::processData(std::vector<Value>& aData) {
+void GetDataHelper::processData(std::vector<Value>& aData) {
     vectorDataHelper(aData);
 }
 template<>
-void RGetDataHelper::processData(objects::PeriodVector<int>& aData) {
+void GetDataHelper::processData(objects::PeriodVector<int>& aData) {
     vectorDataHelper(aData);
 }
 template<>
-void RGetDataHelper::processData(objects::PeriodVector<double>& aData) {
+void GetDataHelper::processData(objects::PeriodVector<double>& aData) {
     vectorDataHelper(aData);
 }
 template<>
-void RGetDataHelper::processData(objects::PeriodVector<Value>& aData) {
+void GetDataHelper::processData(objects::PeriodVector<Value>& aData) {
     vectorDataHelper(aData);
 }
 template<>
-void RGetDataHelper::processData(objects::TechVintageVector<int>& aData) {
+void GetDataHelper::processData(objects::TechVintageVector<int>& aData) {
   vectorDataHelper(aData);
 }
 template<>
-void RGetDataHelper::processData(objects::TechVintageVector<double>& aData) {
+void GetDataHelper::processData(objects::TechVintageVector<double>& aData) {
   vectorDataHelper(aData);
 }
 template<>
-void RGetDataHelper::processData(objects::TechVintageVector<Value>& aData) {
+void GetDataHelper::processData(objects::TechVintageVector<Value>& aData) {
   vectorDataHelper(aData);
 }
 template<>
-void RGetDataHelper::processData(objects::YearVector<double>& aData) {
+void GetDataHelper::processData(objects::YearVector<double>& aData) {
   vectorDataHelper(aData);
 }
 template<>
-void RGetDataHelper::processData(std::map<unsigned int, double>& aData) {
+void GetDataHelper::processData(std::map<unsigned int, double>& aData) {
   if(mYearVector.empty()) {
     mColNames.push_back("year");
   }
@@ -179,7 +173,7 @@ void RGetDataHelper::processData(std::map<unsigned int, double>& aData) {
   }
 }
 template<typename VecType>
-void RGetDataHelper::vectorDataHelper(VecType& aDataVec) {
+void GetDataHelper::vectorDataHelper(VecType& aDataVec) {
     if(mYearVector.empty()) {
         mColNames.push_back("year");
     }
@@ -190,11 +184,11 @@ void RGetDataHelper::vectorDataHelper(VecType& aDataVec) {
 }
 
 template<typename T>
-void RGetDataHelper::processData(T& aData) {
-  Rcpp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
+void GetDataHelper::processData(T& aData) {
+  Interp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
 }
 
-FilterStep* RGetDataHelper::parseFilterStepStr( const std::string& aFilterStepStr, int& aCol ) {
+FilterStep* GetDataHelper::parseFilterStepStr( const std::string& aFilterStepStr, int& aCol ) {
   auto openBracketIter = std::find( aFilterStepStr.begin(), aFilterStepStr.end(), '[' );
   if( openBracketIter == aFilterStepStr.end() ) {
     // no filter just the data name
@@ -291,7 +285,7 @@ FilterStep* RGetDataHelper::parseFilterStepStr( const std::string& aFilterStepSt
  * \param aFilterStr A string representing a series of FilterSteps.
  * \return A list of FilterSteps parsed from aFilterStr as detailed above.
  */
-void RGetDataHelper::parseFilterString(const std::string& aFilterStr ) {
+void GetDataHelper::parseFilterString(const std::string& aFilterStr ) {
   std::vector<std::string> filterStepsStr;
   boost::split( filterStepsStr, aFilterStr, boost::is_any_of( "/" ) );
   std::vector<FilterStep*> filterSteps( filterStepsStr.size() );
