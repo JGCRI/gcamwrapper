@@ -55,7 +55,7 @@ get_data <- function(gcam, path) {
   col_names <- names(data)
   value_col <- ifelse(col_names[length(col_names)] == "year", col_names[length(col_names)-1], col_names[length(col_names)])
   group_cols <- col_names[col_names != value_col]
-  data %>%
+  as_tibble(data) %>%
     group_by_at(vars(group_cols)) %>%
     summarize_at(vars(value_col), list(sum)) %>%
     ungroup()

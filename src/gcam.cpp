@@ -29,13 +29,19 @@ class gcam {
     public:
         gcam(string aConfiguration, string aWorkDir):isInitialized(false) {
             int success = chdir(aWorkDir.c_str());
-            if(!success) {
+            if(success != 0) {
                 Interp::stop("Could not set working directory to: "+aWorkDir);
             }
             initializeScenario(aConfiguration);
         }
         gcam(const gcam& aOther):isInitialized(aOther.isInitialized) {
             cout << "it's copying" << endl;
+        }
+        ~gcam() {
+            delete scenario->mManageStateVars;
+            scenario->mManageStateVars = 0;
+            runner.reset(0);
+            scenario = 0;
         }
 
         void runToPeriod(const int aPeriod ) {

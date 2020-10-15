@@ -43,7 +43,7 @@ namespace Interp {
     }
     template<typename VectorType>
     inline VectorType getDataFrameAt(const DataFrame& aDataFrame, const int aIndex) {
-      return aDataFrame.at(aIndex);
+      return aDataFrame.at(aIndex < 0 ? aIndex + aDataFrame.length() : aIndex);
     }
     inline int getDataFrameNumRows(const DataFrame& aDataFrame) {
       return aDataFrame.nrow();
@@ -180,13 +180,23 @@ namespace Interp {
         bnp::ndarray wrapRef = bnp::from_data(&aData[0], dtype, shape, stride, owner);
         return wrapRef.copy();
     }
+    template<>
+    inline bnp::ndarray wrap(const std::vector<std::string>& aData) {
+        bnp::ndarray ret = createVector<std::string, StringVector>(aData.size());
+        bp::str* retData = reinterpret_cast<bp::str*>(ret.get_data());
+        for(size_t i = 0; i < aData.size(); ++i) {
+            retData[i] = aData[i].c_str();
+        }
+        return ret;
+    }
+
     template<typename MatrixType>
     NumericMatrix wrapMatrix(const MatrixType& aData, int aSize) {
         NumericMatrix ret = createNumericMatrix(aSize);
         double* retData = reinterpret_cast<double*>(ret.get_data());
-        //const size_t stride = sizeof(double);
+        const size_t row_stride = aSize;
         double* row_iter = retData;
-        for(int i = 0; i < aSize; ++i, ++row_iter) {
+        for(int i = 0; i < aSize; ++i, row_iter += row_stride) {
             double* col_iter = row_iter;
             for (int j = 0; j < aSize; ++j, ++col_iter) {
                 *col_iter = aData(i, j);
