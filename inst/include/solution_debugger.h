@@ -18,6 +18,8 @@ public:
 
   SolutionDebugger(World *w, Marketplace *m, SolutionInfoSet &sisin, int per);
 
+  Interp::StringVector getMarketNames();
+
   Interp::NumericVector getPrices(const bool aScaled);
 
   Interp::NumericVector getFX();

@@ -213,6 +213,7 @@ BOOST_PYTHON_MODULE(gcam_module) {
     to_python_converter<Interp::IntegerVector, Interp::vec_to_python<Interp::IntegerVector> >();
   class_<SolutionDebugger>("SolutionDebugger", no_init)
 
+  .def("getMarketNames",        &SolutionDebugger::getMarketNames,         "getMarketNames")
   .def("getPrices",        &SolutionDebugger::getPrices,         "getPrices")
   .def("getFX", &SolutionDebugger::getFX, "getFX")
   .def("getSupply", &SolutionDebugger::getSupply, "getSupply")

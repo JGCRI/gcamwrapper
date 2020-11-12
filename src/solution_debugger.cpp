@@ -46,6 +46,10 @@ SolutionDebugger::SolutionDebugger(World *w, Marketplace *m, SolutionInfoSet &si
   F(x, fx);
 }
 
+StringVector SolutionDebugger::getMarketNames() {
+    return marketNames;
+}
+
 NumericVector SolutionDebugger::getPrices(const bool aScaled) {
   NumericVector ret(createVector<double, NumericVector>(nsolv));
   for(int i = 0; i < nsolv; ++i) {
