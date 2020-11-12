@@ -35,7 +35,7 @@ class gcam {
             initializeScenario(aConfiguration);
         }
         gcam(const gcam& aOther):isInitialized(aOther.isInitialized) {
-            cout << "it's copying" << endl;
+            Interp::stop("TODO: not sure copying is safe");
         }
         ~gcam() {
             delete scenario->mManageStateVars;
@@ -69,22 +69,6 @@ class gcam {
         GetDataHelper helper(aHeader);
         return helper.run(runner->getInternalScenario());
       }
-
-      /*
-      Interp::NumericVector test2(boost::python::numpy::ndarray ret) {
-          return test(ret);
-      }
-      Interp::NumericVector test(Interp::NumericVector ret) {
-          //Interp::NumericVector ret = Interp::createVector<double, Interp::NumericVector>(4);
-          for(int i = 0; i < 4; ++i) {
-              ret[i] = i * 1.1;
-          }
-          if(ret[0] == 0.0) {
-              cout << "Same" << endl;
-          }
-          return ret;
-      }
-      */
 
       SolutionDebugger createSolutionDebugger(const int aPeriod) {
         delete scenario->mManageStateVars;
@@ -165,7 +149,7 @@ class gcam {
 
 };
 
-#if defined(USING_R)
+#if defined(IS_INTERP_R)
 RCPP_EXPOSED_CLASS_NODECL(gcam)
 RCPP_EXPOSED_CLASS_NODECL(SolutionDebugger)
 RCPP_MODULE(gcam_module) {
@@ -195,7 +179,7 @@ RCPP_MODULE(gcam_module) {
   .method("setSlope", &SolutionDebugger::setSlope, "setSlope")
   ;
 }
-#elif defined(PY_VERSION_HEX)
+#elif defined(IS_INTERP_PYTHON)
 using namespace boost::python;
 
 BOOST_PYTHON_MODULE(gcam_module) {
@@ -205,7 +189,6 @@ BOOST_PYTHON_MODULE(gcam_module) {
         .def("runToPeriod",        &gcam::runToPeriod,         "run to model period")
         .def("setData", &gcam::setData, "set data")
         .def("getData", &gcam::getData, "get data")
-        //.def("test", &gcam::test2, "test")
         .def("createSolutionDebugger", &gcam::createSolutionDebugger, "create solution debugger")
         ;
     to_python_converter<Interp::NumericVector, Interp::vec_to_python<Interp::NumericVector> >();
