@@ -1,4 +1,3 @@
-#include <unistd.h>
 
 #include "interp_interface.h"
 #include <iostream>
@@ -15,6 +14,8 @@
 #include "util/base/include/xml_helper.h"
 #include "util/base/include/manage_state_variables.hpp"
 
+#include <boost/filesystem/operations.hpp>
+
 #include "set_data_helper.h"
 #include "get_data_helper.h"
 #include "solution_debugger.h"
@@ -28,8 +29,9 @@ Scenario* scenario;
 class gcam {
     public:
         gcam(string aConfiguration, string aWorkDir):isInitialized(false) {
-            int success = chdir(aWorkDir.c_str());
-            if(success != 0) {
+            try {
+                boost::filesystem::current_path(boost::filesystem::path(aWorkDir));
+            } catch(...) {
                 Interp::stop("Could not set working directory to: "+aWorkDir);
             }
             initializeScenario(aConfiguration);

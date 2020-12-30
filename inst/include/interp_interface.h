@@ -16,12 +16,12 @@
 
 class gcam_exception : public std::exception {
     public:
-        gcam_exception(const char* aMessage):mMessage(aMessage) {}
-        inline virtual const char* what() const _NOEXCEPT {
-            return mMessage;
+        gcam_exception(const std::string& aMessage):mMessage(aMessage) {}
+        inline virtual const char* what() const noexcept {
+            return mMessage.c_str();
         }
     private:
-        const char* mMessage;
+        std::string mMessage;
 };
 
 #if defined(USING_R)
@@ -80,7 +80,7 @@ namespace Interp {
 #elif defined(PY_VERSION_HEX)
 namespace Interp {
     static void stop(const std::string& aMessage) {
-        throw new gcam_exception(aMessage.c_str());
+        throw gcam_exception(aMessage);
     }
     static void warning(const std::string& aMessage) {
         PyErr_WarnEx(PyExc_UserWarning, aMessage.c_str(), 1);
