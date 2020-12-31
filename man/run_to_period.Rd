@@ -7,9 +7,9 @@
 run_to_period(gcam, period)
 }
 \arguments{
-\item{gcam}{An initialized GCAM instance}
+\item{gcam}{(gcam) An initialized GCAM instance}
 
-\item{period}{The GCAM model period to run up to}
+\item{period}{(integer) The GCAM model period to run up to}
 }
 \value{
 GCAM instance

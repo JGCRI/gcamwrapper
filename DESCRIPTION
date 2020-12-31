@@ -1,10 +1,13 @@
 Package: gcamdebugr
-Title: What the Package Does (one line, title case)
-Version: 0.0.0.9000
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Title: R API for GCAM
+Version: 0.1.0
+Authors@R: c(person("Pralit", "Patel", email = "pralit.patel@pnnl.gov", role = c("aut", "cre"), comment = c(ORCID = "0000-0003-3992-1061")),
+             person("Chris", "Vernon", email = "chris.vernon@pnnl.gov", role = c("aut"), comment = c(ORCID = "0000-0002-3406-6214")))
+Description: A wrapper around GCAM to interactively run a scenario and use
+       GCAMFusion capabilities to get/set arbitrary data from a running
+       instance.
 Depends: R (>= 3.3.2)
-License: What license is it under?
+License: ECL 2 file LICENSE
 Encoding: UTF-8
 LazyData: true
 LinkingTo: Rcpp

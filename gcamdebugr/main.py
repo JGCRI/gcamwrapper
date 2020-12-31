@@ -160,7 +160,7 @@ class SolutionDebugger (gcam_module.SolutionDebugger):
                         they will be before getting set into the solver.
         :type scaled:   boolean
         :param reset:   If the STATE of the model should be reset after doing this evaluation.
-        :type scaled:   boolean
+        :type reset:    boolean
 
         :returns:   A Series of the F(x) which results from the evaluation.
 

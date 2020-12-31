@@ -63,7 +63,7 @@ setup(
     ext_modules=[gcam_module],
     install_requires=get_requirements(),
     url='https://stash.pnnl.gov/scm/jgcri/gcamdebugr.git',
-    license='BSD 2-Clause',
+    license='ECL 2',
     author='Pralit Patel, Chris R. Vernon',
     author_email='pralit.patel@pnnl.gov, chris.vernon@pnnl.gov',
     description='Python API for GCAM',

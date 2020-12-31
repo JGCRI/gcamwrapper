@@ -8,9 +8,9 @@ create_and_initialize(configuration = "configuration.xml",
   workdir = ".")
 }
 \arguments{
-\item{configuration}{The configuration XML to use.}
+\item{configuration}{(string) The configuration XML to use.}
 
-\item{workdir}{The working directory to use which may be important if the
+\item{workdir}{(string) The working directory to use which may be important if the
 paths in \code{configuration} are relative.}
 }
 \value{

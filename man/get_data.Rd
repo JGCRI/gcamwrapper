@@ -7,9 +7,9 @@
 get_data(gcam, path)
 }
 \arguments{
-\item{gcam}{An initialized GCAM instance}
+\item{gcam}{(gcam) An initialized GCAM instance}
 
-\item{path}{A GCAM fusion-ish search path to determine where to get the data.}
+\item{path}{(string) A GCAM fusion-ish search path to determine where to get the data.}
 }
 \value{
 A tibble containing the requested data
