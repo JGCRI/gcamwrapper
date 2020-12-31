@@ -2,6 +2,15 @@ import os, platform
 
 from setuptools import setup, find_packages, Extension
 
+def readme():
+    with open('README.md') as f:
+        return f.read()
+
+
+def get_requirements():
+    with open('requirements.txt') as f:
+        return f.read().split()
+
 GCAM_INCLUDE = os.environ["GCAM_INCLUDE"]
 GCAM_LIB = os.environ["GCAM_LIB"]
 BOOST_INCLUDE = os.environ["BOOST_INCLUDE"]
@@ -52,12 +61,13 @@ setup(
     version='0.1.0',
     packages=find_packages(),
     ext_modules=[gcam_module],
-    install_requires=["pandas"],
+    install_requires=get_requirements(),
     url='https://stash.pnnl.gov/scm/jgcri/gcamdebugr.git',
     license='BSD 2-Clause',
     author='Pralit Patel, Chris R. Vernon',
     author_email='pralit.patel@pnnl.gov, chris.vernon@pnnl.gov',
     description='Python API for GCAM',
+    long_description=readme(),
     python_requires='>=3.6.*, <4'
 )
  

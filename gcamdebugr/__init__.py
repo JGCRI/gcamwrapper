@@ -1,5 +1,5 @@
 """init file"""
 
-from gcamdebugr.main import gcam, SolutionDebugger
+from gcamdebugr.main import Gcam, SolutionDebugger
 
-__all__ = ['gcam', 'SolutionDebugger']
+__all__ = ['Gcam', 'SolutionDebugger']

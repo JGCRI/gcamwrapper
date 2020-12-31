@@ -159,26 +159,26 @@ RCPP_MODULE(gcam_module) {
 
         .constructor<string, string>("constructor")
 
-        .method("runToPeriod",        &gcam::runToPeriod,         "run to model period")
-        .method("setData", &gcam::setData, "set data")
-        .method("getData", &gcam::getData, "get data")
-        .method("createSolutionDebugger", &gcam::createSolutionDebugger, "create solution debugger")
+        .method("run_to_period",        &gcam::runToPeriod,         "run to model period")
+        .method("set_data", &gcam::setData, "set data")
+        .method("get_data", &gcam::getData, "get data")
+        .method("create_solution_debugger", &gcam::createSolutionDebugger, "create solution debugger")
         ;
 
   Rcpp::class_<SolutionDebugger>("SolutionDebugger")
 
-  .method("getPrices",        &SolutionDebugger::getPrices,         "getPrices")
-  .method("getFX", &SolutionDebugger::getFX, "getFX")
-  .method("getSupply", &SolutionDebugger::getSupply, "getSupply")
-  .method("getDemand", &SolutionDebugger::getDemand, "getDemand")
-  .method("getPriceScaleFactor", &SolutionDebugger::getPriceScaleFactor, "getPriceScaleFactor")
-  .method("getQuantityScaleFactor", &SolutionDebugger::getQuantityScaleFactor, "getQuantityScaleFactor")
-  .method("setPrices", &SolutionDebugger::setPrices, "setPrices")
+  .method("get_prices",        &SolutionDebugger::getPrices,         "getPrices")
+  .method("get_fx", &SolutionDebugger::getFX, "getFX")
+  .method("get_supply", &SolutionDebugger::getSupply, "getSupply")
+  .method("get_demand", &SolutionDebugger::getDemand, "getDemand")
+  .method("get_price_scale_factor", &SolutionDebugger::getPriceScaleFactor, "getPriceScaleFactor")
+  .method("get_quantity_scale_factor", &SolutionDebugger::getQuantityScaleFactor, "getQuantityScaleFactor")
+  .method("set_prices", &SolutionDebugger::setPrices, "setPrices")
   .method("evaluate", &SolutionDebugger::evaluate, "evaluate")
-  .method("evaluatePartial", &SolutionDebugger::evaluatePartial, "evaluatePartial")
-  .method("calcDerivative", &SolutionDebugger::calcDerivative, "calcDerivative")
-  .method("getSlope", &SolutionDebugger::getSlope, "getSlope")
-  .method("setSlope", &SolutionDebugger::setSlope, "setSlope")
+  .method("evaluate_partial", &SolutionDebugger::evaluatePartial, "evaluatePartial")
+  .method("calc_derivative", &SolutionDebugger::calcDerivative, "calcDerivative")
+  .method("get_slope", &SolutionDebugger::getSlope, "getSlope")
+  .method("set_slope", &SolutionDebugger::setSlope, "setSlope")
   ;
 }
 #elif defined(IS_INTERP_PYTHON)
@@ -188,29 +188,29 @@ BOOST_PYTHON_MODULE(gcam_module) {
     boost::python::numpy::initialize();
     class_<gcam>("gcam", init<string, string>())
 
-        .def("runToPeriod",        &gcam::runToPeriod,         "run to model period")
-        .def("setData", &gcam::setData, "set data")
-        .def("getData", &gcam::getData, "get data")
-        .def("createSolutionDebugger", &gcam::createSolutionDebugger, "create solution debugger")
+        .def("run_to_period",        &gcam::runToPeriod,         "run to model period")
+        .def("set_data", &gcam::setData, "set data")
+        .def("get_data", &gcam::getData, "get data")
+        .def("create_solution_debugger", &gcam::createSolutionDebugger, "create solution debugger")
         ;
     to_python_converter<Interp::NumericVector, Interp::vec_to_python<Interp::NumericVector> >();
     to_python_converter<Interp::StringVector, Interp::vec_to_python<Interp::StringVector> >();
     to_python_converter<Interp::IntegerVector, Interp::vec_to_python<Interp::IntegerVector> >();
   class_<SolutionDebugger>("SolutionDebugger", no_init)
 
-  .def("getMarketNames",        &SolutionDebugger::getMarketNames,         "getMarketNames")
-  .def("getPrices",        &SolutionDebugger::getPrices,         "getPrices")
-  .def("getFX", &SolutionDebugger::getFX, "getFX")
-  .def("getSupply", &SolutionDebugger::getSupply, "getSupply")
-  .def("getDemand", &SolutionDebugger::getDemand, "getDemand")
-  .def("getPriceScaleFactor", &SolutionDebugger::getPriceScaleFactor, "getPriceScaleFactor")
-  .def("getQuantityScaleFactor", &SolutionDebugger::getQuantityScaleFactor, "getQuantityScaleFactor")
-  .def("setPrices", &SolutionDebugger::setPrices_wrap, "setPrices")
+  .def("get_market_names",        &SolutionDebugger::getMarketNames,         "getMarketNames")
+  .def("get_prices",        &SolutionDebugger::getPrices,         "getPrices")
+  .def("get_fx", &SolutionDebugger::getFX, "getFX")
+  .def("get_supply", &SolutionDebugger::getSupply, "getSupply")
+  .def("get_demand", &SolutionDebugger::getDemand, "getDemand")
+  .def("get_price_scale_factor", &SolutionDebugger::getPriceScaleFactor, "getPriceScaleFactor")
+  .def("get_quantity_scale_factor", &SolutionDebugger::getQuantityScaleFactor, "getQuantityScaleFactor")
+  .def("set_prices", &SolutionDebugger::setPrices_wrap, "setPrices")
   .def("evaluate", &SolutionDebugger::evaluate_wrap, "evaluate")
-  .def("evaluatePartial", &SolutionDebugger::evaluatePartial, "evaluatePartial")
-  .def("calcDerivative", &SolutionDebugger::calcDerivative, "calcDerivative")
-  .def("getSlope", &SolutionDebugger::getSlope, "getSlope")
-  .def("setSlope", &SolutionDebugger::setSlope_wrap, "setSlope")
+  .def("evaluate_partial", &SolutionDebugger::evaluatePartial, "evaluatePartial")
+  .def("calc_derivative", &SolutionDebugger::calcDerivative, "calcDerivative")
+  .def("get_slope", &SolutionDebugger::getSlope, "getSlope")
+  .def("set_slope", &SolutionDebugger::setSlope_wrap, "setSlope")
   ;
 }
 #endif
