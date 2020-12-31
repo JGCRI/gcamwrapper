@@ -46,7 +46,7 @@ set_data <- function(gcam, data, path) {
 #' @param path (string) A GCAM fusion-ish search path to determine where to get the data.
 #' @return A tibble containing the requested data
 #' @export
-#' @importFrom dplyr group_by_at vars summarize_at ungroup
+#' @importFrom dplyr group_by_at vars summarize_at ungroup as_tibble
 #' @importFrom magrittr %>%
 get_data <- function(gcam, path) {
   data <- gcam$get_data(path)

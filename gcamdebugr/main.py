@@ -18,8 +18,14 @@ class Gcam (gcam_module.gcam):
 
         """
 
-        data_dict = super(gcam, self).get_data(query)
-        return DataFrame(data_dict)
+        data_dict = super(Gcam, self).get_data(query)
+        data_df = DataFrame(data_dict)
+        # The data comming out of gcam is unaggregated so we will need to do that now
+        # first figure out what the "value" column is, group by everything else, and summarize
+        # TODO: decide on failure mode when no results
+        cols = data_df.columns
+        value_col = cols[-2] if cols[-1] == "year" else cols[-1]
+        return data_df.groupby(cols.drop(value_col).to_list(), as_index=False).sum()
 
     def set_data(self, data_df, query):
         """Changes arbitrary data in a running instance of GCAM.
@@ -34,7 +40,7 @@ class Gcam (gcam_module.gcam):
         data_dict = dict()
         for key, value in data_df.items():
             data_dict[key] = value.to_numpy()
-        super(gcam, self).set_data(data_dict, query)
+        super(Gcam, self).set_data(data_dict, query)
 
     def create_solution_debugger(self, period):
         """Create a solution debugging object which can be used a single
@@ -48,7 +54,7 @@ class Gcam (gcam_module.gcam):
 
         """
 
-        sd = super(gcam, self).create_solution_debugger(period)
+        sd = super(Gcam, self).create_solution_debugger(period)
         sd.__class__ = SolutionDebugger
         return sd
 
