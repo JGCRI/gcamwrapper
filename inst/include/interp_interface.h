@@ -126,7 +126,7 @@ namespace Interp {
     using DataFrame = bp::dict;
     using NumericVector = NumpyVecWrapper<double>;
     using StringVector = NumpyVecWrapper<bp::str>;
-    using IntegerVector = NumpyVecWrapper<int>;
+    using IntegerVector = NumpyVecWrapper<size_t>;
     using NumericMatrix = bnp::ndarray;
 
     inline DataFrame createDataFrame() {
@@ -176,7 +176,7 @@ namespace Interp {
         bp::object owner;
         // this will *not* copy results which perhaps may be useful but we
         // would need an owner with the correct scope
-        // but to be consistent with R we do want to copy
+        // and to be consistent with R we will make an explicit copy
         bnp::ndarray wrapRef = bnp::from_data(&aData[0], dtype, shape, stride, owner);
         return wrapRef.copy();
     }
