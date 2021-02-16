@@ -12,6 +12,8 @@
 #define IS_INTERP_PYTHON
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
+#else
+#error "Could not determine, or using an unknown interpreter. Only R and Python are currently supported."
 #endif
 
 class gcam_exception : public std::exception {
