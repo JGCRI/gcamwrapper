@@ -9,7 +9,7 @@
 #include "solution/util/include/fdjac.hpp"
 #include "util/base/include/manage_state_variables.hpp"
 
-using namespace Rcpp;
+using namespace Interp;
 
 SolutionDebugger SolutionDebugger::createInstance(const int aPeriod) {
   SolutionInfoSet solnInfoSet( scenario->getMarketplace() );
@@ -28,62 +28,71 @@ SolutionDebugger::SolutionDebugger(World *w, Marketplace *m, SolutionInfoSet &si
   F(solnInfoSet,w,m,per,false),
   x(nsolv),
   fx(nsolv),
-  marketNames(nsolv),
-  priceScaleFactor(nsolv),
-  quantityScaleFactor(nsolv)
+  marketNames(createVector<std::string, StringVector>(nsolv)),
+  priceScaleFactor(createVector<double, NumericVector>(nsolv)),
+  quantityScaleFactor(createVector<double, NumericVector>(nsolv))
 {
   std::vector<SolutionInfo> smkts(solnInfoSet.getSolvableSet());
   for(unsigned int i = 0; i < smkts.size(); ++i) {
     x[i] = smkts[i].getPrice();
-    marketNames[i] = smkts[i].getName();
+    marketNames[i] = smkts[i].getName().c_str();
     priceScaleFactor[i] = std::max(smkts[i].getForecastPrice(), 0.001);
     quantityScaleFactor[i] = std::abs(smkts[i].getForecastDemand());
   }
-  priceScaleFactor.names() = marketNames;
-  quantityScaleFactor.names() = marketNames;
+  setVectorNames(priceScaleFactor, marketNames);
+  setVectorNames(quantityScaleFactor, marketNames);
 
   F.scaleInitInputs(x);
   F(x, fx);
 }
 
+StringVector SolutionDebugger::getMarketNames() {
+    return marketNames;
+}
+
 NumericVector SolutionDebugger::getPrices(const bool aScaled) {
-  NumericVector ret(nsolv);
-  ret.assign(x.begin(), x.end());
-  ret.names() = marketNames;
-  if(!aScaled) {
-    ret = ret * priceScaleFactor;
+  NumericVector ret(createVector<double, NumericVector>(nsolv));
+  for(int i = 0; i < nsolv; ++i) {
+      double val = x[i];
+      if(!aScaled) {
+          val *= priceScaleFactor[i];
+      }
+      ret[i] = val;
   }
+  setVectorNames(ret, marketNames);
   return ret;
 }
 
 NumericVector SolutionDebugger::getFX() {
-  NumericVector ret(nsolv);
-  ret.assign(fx.begin(), fx.end());
-  ret.names() = marketNames;
+  NumericVector ret(createVector<double, NumericVector>(nsolv));
+  std::copy(fx.begin(), fx.end(), &ret[0]);
+  setVectorNames(ret, marketNames);
   return ret;
 }
 
 NumericVector SolutionDebugger::getSupply(const bool aScaled) {
-  NumericVector ret(nsolv);
+  NumericVector ret(createVector<double, NumericVector>(nsolv));
   for(int i = 0; i < nsolv; ++i) {
-    ret[i] = solnInfoSet.getSolvable(i).getSupply();
+      double val = solnInfoSet.getSolvable(i).getSupply();
+      if(aScaled) {
+          val /= quantityScaleFactor[i];
+      }
+    ret[i] = val;
   }
-  ret.names() = marketNames;
-  if(aScaled) {
-    ret = ret / quantityScaleFactor;
-  }
+  setVectorNames(ret, marketNames);
   return ret;
 }
 
 NumericVector SolutionDebugger::getDemand(const bool aScaled) {
-  NumericVector ret(nsolv);
+  NumericVector ret(createVector<double, NumericVector>(nsolv));
   for(int i = 0; i < nsolv; ++i) {
-    ret[i] = solnInfoSet.getSolvable(i).getDemand();
+      double val = solnInfoSet.getSolvable(i).getDemand();
+      if(aScaled) {
+          val /= quantityScaleFactor[i];
+      }
+    ret[i] = val;
   }
-  ret.names() = marketNames;
-  if(aScaled) {
-    ret = ret / quantityScaleFactor;
-  }
+  Interp::setVectorNames(ret, marketNames);
   return ret;
 }
 
@@ -151,23 +160,18 @@ NumericMatrix SolutionDebugger::calcDerivative() {
 #endif
   UBMATRIX jac(nsolv,nsolv);
   fdjac(F, x, fx, jac, true);
-  NumericMatrix jacRet(nsolv, nsolv);
-  for(int row = 0; row < nsolv; ++row) {
-    for(int col = 0; col < nsolv; ++col) {
-      jacRet.at(row, col) = jac(row, col);
-    }
-  }
-  rownames(jacRet) = marketNames;
-  colnames(jacRet) = marketNames;
+  NumericMatrix jacRet = wrapMatrix(jac, nsolv);
+  Interp::setMatrixNames(jacRet, marketNames);
 
   return jacRet;
 }
 
 NumericVector SolutionDebugger::getSlope() {
-  NumericVector slope(nsolv);
+  NumericVector slope(createVector<double, NumericVector>(nsolv));
   for(int i = 0; i < nsolv; ++i) {
     //slope[i] = solnInfoSet.getSolvable(i).getCorrectionSlope();
   }
+  setVectorNames(slope, marketNames);
   return slope;
 }
 

@@ -1,22 +1,22 @@
 #ifndef __GET_DATA_HELPER_H__
 #define __GET_DATA_HELPER_H__
 
-#define STRICT_R_HEADERS
-#include "Rcpp.h"
+#include "interp_interface.h"
+#include <string>
 #include <vector>
 
 class Scenario;
-class FilterStep;
+struct FilterStep;
 class AMatcherWrapper;
 
-class RGetDataHelper {
+class GetDataHelper {
 public:
-  RGetDataHelper(const Rcpp::String& aHeader)
+  GetDataHelper(const std::string& aHeader)
   {
     parseFilterString(aHeader);
   }
-  ~RGetDataHelper();
-  Rcpp::List run( Scenario* aScenario);
+  ~GetDataHelper();
+  Interp::DataFrame run( Scenario* aScenario);
   template<typename T>
   void processData(T& aData);
 private:

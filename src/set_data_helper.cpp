@@ -1,5 +1,4 @@
-#define STRICT_R_HEADERS
-#include "Rcpp.h"
+#include "interp_interface.h"
 
 #include "set_data_helper.h"
 
@@ -7,67 +6,67 @@
 #include "util/base/include/gcam_data_containers.h"
 
 using namespace std;
-using namespace Rcpp;
+using namespace Interp;
 
-class RStringVecEquals : public AMatchesValue {
+class StringVecEquals : public AMatchesValue {
 public:
-  RStringVecEquals( const Rcpp::StringVector& aStr, int& row ):mStr( aStr ), mRow( row ) {}
-  virtual ~RStringVecEquals() {}
+  StringVecEquals( const Interp::StringVector& aStr, int& row ):mStr( aStr ), mRow( row ) {}
+  virtual ~StringVecEquals() {}
   virtual bool matchesString( const std::string& aStrToTest ) const {
     return mStr[mRow] == aStrToTest;
   }
 private:
-  const Rcpp::StringVector mStr;
+  const Interp::StringVector mStr;
   int& mRow;
 };
 
-class RIntVecEquals : public AMatchesValue {
+class IntVecEquals : public AMatchesValue {
 public:
-  RIntVecEquals( const Rcpp::IntegerVector& aInt, int& row ):mInt( aInt ), mRow( row ) {}
-  virtual ~RIntVecEquals() {}
+  IntVecEquals( const Interp::IntegerVector& aInt, int& row ):mInt( aInt ), mRow( row ) {}
+  virtual ~IntVecEquals() {}
   virtual bool matchesInt( const int aIntToTest ) const {
     return mInt[mRow] == aIntToTest;
   }
 private:
-  const Rcpp::IntegerVector mInt;
+  const Interp::IntegerVector mInt;
   int& mRow;
 };
 
-void RSetDataHelper::run(Scenario* aScenario) {
-  GCAMFusion<RSetDataHelper> fusion(*this, mFilterSteps);
-  for(mRow = 0; mRow < mData.nrow(); ++mRow) {
+void SetDataHelper::run(Scenario* aScenario) {
+  GCAMFusion<SetDataHelper> fusion(*this, mFilterSteps);
+  for(mRow = 0; mRow < getDataFrameNumRows(mData); ++mRow) {
     fusion.startFilter(aScenario);
   }
 }
 
-RSetDataHelper::~RSetDataHelper() {
+SetDataHelper::~SetDataHelper() {
   for(auto step : mFilterSteps) {
     delete step;
   }
 }
 
 template<>
-void RSetDataHelper::processData(double& aData) {
+void SetDataHelper::processData(double& aData) {
   aData = mDataVector[mRow];
 }
 template<>
-void RSetDataHelper::processData(Value& aData) {
+void SetDataHelper::processData(Value& aData) {
   aData = mDataVector[mRow];
 }
 template<>
-void RSetDataHelper::processData(int& aData) {
+void SetDataHelper::processData(int& aData) {
   aData = mDataVector[mRow];
 }
 template<>
-void RSetDataHelper::processData(std::pair<unsigned int const, double>& aData) {
+void SetDataHelper::processData(std::pair<unsigned int const, double>& aData) {
   aData.second = mDataVector[mRow];
 }
 template<typename T>
-void RSetDataHelper::processData(T& aData) {
-  Rcpp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
+void SetDataHelper::processData(T& aData) {
+  Interp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
 }
 
-FilterStep* RSetDataHelper::parseFilterStepStr( const std::string& aFilterStepStr, int& aCol ) {
+FilterStep* SetDataHelper::parseFilterStepStr( const std::string& aFilterStepStr, int& aCol ) {
   auto openBracketIter = std::find( aFilterStepStr.begin(), aFilterStepStr.end(), '[' );
   if( openBracketIter == aFilterStepStr.end() ) {
     // no filter just the data name
@@ -82,11 +81,11 @@ FilterStep* RSetDataHelper::parseFilterStepStr( const std::string& aFilterStepSt
     AMatchesValue* matcher = 0;
     FilterStep* filterStep = 0;
     if( filterStr == "name" ) {
-      matcher = new RStringVecEquals( mData.at(aCol), mRow );
+      matcher = new StringVecEquals( getDataFrameAt<StringVector>(mData, aCol), mRow );
       filterStep = new FilterStep( dataName, new NamedFilter( matcher ) );
     }
     else if( filterStr == "year" ) {
-      matcher = new RIntVecEquals( mData.at(aCol), mRow );
+      matcher = new IntVecEquals( getDataFrameAt<IntegerVector>(mData, aCol), mRow );
       filterStep = new FilterStep( dataName, new YearFilter( matcher ) );
     }
     else {
@@ -110,7 +109,7 @@ FilterStep* RSetDataHelper::parseFilterStepStr( const std::string& aFilterStepSt
  * \param aFilterStr A string representing a series of FilterSteps.
  * \return A list of FilterSteps parsed from aFilterStr as detailed above.
  */
-std::vector<FilterStep*> RSetDataHelper::parseFilterString(const std::string& aFilterStr ) {
+std::vector<FilterStep*> SetDataHelper::parseFilterString(const std::string& aFilterStr ) {
   std::vector<std::string> filterStepsStr;
   boost::split( filterStepsStr, aFilterStr, boost::is_any_of( "/" ) );
   std::vector<FilterStep*> filterSteps( filterStepsStr.size() );

@@ -7,11 +7,11 @@
 set_data(gcam, data, path)
 }
 \arguments{
-\item{gcam}{An initialized GCAM instance}
+\item{gcam}{(gcam) An initialized GCAM instance}
 
-\item{data}{A data.frame with the data to set}
+\item{data}{(data.frame) A data.frame with the data to set}
 
-\item{path}{A GCAM fusion-ish search path to determine where to set the data.}
+\item{path}{(string) A GCAM fusion-ish search path to determine where to set the data.}
 }
 \value{
 GCAM instance
