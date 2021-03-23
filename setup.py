@@ -62,7 +62,7 @@ setup(
     packages=find_packages(),
     ext_modules=[gcam_module],
     install_requires=get_requirements(),
-    url='https://stash.pnnl.gov/scm/jgcri/gcamwrapper.git',
+    url='https://github.com/JGCRI/gcamwrapper',
     license='ECL 2',
     author='Pralit Patel, Chris R. Vernon',
     author_email='pralit.patel@pnnl.gov, chris.vernon@pnnl.gov',

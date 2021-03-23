@@ -8,6 +8,7 @@ Description: A wrapper around GCAM to interactively run a scenario and use
        instance.
 Depends: R (>= 3.3.2)
 License: ECL 2 file LICENSE
+URL: https://github.com/JGCRI/gcamwrapper
 Encoding: UTF-8
 LazyData: true
 LinkingTo: Rcpp
