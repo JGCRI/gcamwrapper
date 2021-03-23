@@ -1,6 +1,6 @@
 # A R / Python Package Wrapper Around The Global Change Analysis Model (GCAM)
 
-The gcamdebugr contains all C++ and R/python source code to wrap the [GCAM](https://github.com/JGCRI/gcam-core) model such that simulations can be run interactively.  Users can query a running instance of GCAM to get and set arbitrary parameters and outputs.  In addition it includes methods to interact with the GCAM solver to diagnose solution issues or just "poke" the model to see how it reacts.
+The gcamwrapper contains all C++ and R/python source code to wrap the [GCAM](https://github.com/JGCRI/gcam-core) model such that simulations can be run interactively.  Users can query a running instance of GCAM to get and set arbitrary parameters and outputs.  In addition it includes methods to interact with the GCAM solver to diagnose solution issues or just "poke" the model to see how it reacts.
 
 ## Building the package
 
@@ -8,7 +8,7 @@ This package **does not** contain the GCAM model.  In other words users still ne
 
 ### Changes required in GCAM
 
-At the time of this writing one change is required to GCAM itself to be compatible with gcamdebugr which is to modify `cvs/objects/containers/include/scenario.h`:
+At the time of this writing one change is required to GCAM itself to be compatible with gcamwrapper which is to modify `cvs/objects/containers/include/scenario.h`:
 ```diff
 diff --git a/cvs/objects/containers/include/scenario.h b/cvs/objects/containers/include/scenario.h
 index 7f93c85b9..43d980916 100644
@@ -26,7 +26,7 @@ index 7f93c85b9..43d980916 100644
 
 ### Creating a libgcam to link to
 
-At the time of this writing some build systems may not generate a suitable libgcam, a compiled library of GCAM's C++ source, to link gcamdebugr to.  However some simple steps could be taken to create it depending on which system you are using to compile GCAM:
+At the time of this writing some build systems may not generate a suitable libgcam, a compiled library of GCAM's C++ source, to link gcamwrapper to.  However some simple steps could be taken to create it depending on which system you are using to compile GCAM:
 
 #### Makefile
 
@@ -61,7 +61,7 @@ And copy the libhector into the same place:
 copy ..\cvs\objects\build\vc10\x64\Release\hector-lib.lib hector.lib
 ```
 
-### Setting up the environment variables to build gcamdebugr
+### Setting up the environment variables to build gcamwrapper
 Both R and Python builds are configured to find GCAM and the third party libraries which GCAM uses by checking the environment variables noted below.  TODO: R on windows uses `mingw` as it's C++ compiler (a Windows build of GCC) and it seems unlikely it will be able to link with a Visual Studio built library.  In addition not until R 4.0 does it use a version of `mingw` new enough to support the C++ 14 standard which GCAM uses.
 
 Python users will need to compile Boost.python if they have not done so already.  To do so they should ensure `python` is found in their `PATH` and that the `numpy` package has been installed.  Then they can simply:
@@ -85,10 +85,10 @@ The following environment variables must be set.  The paths below are an example
 ```bash
 export GCAM_INCLUDE=/Users/Pralit/models/gcam-core/cvs/objects
 export GCAM_LIB=/Users/Pralit/models/gcam-core/cvs/objects/build/linux
-export BOOST_INCLUDE=/Users/Pralit/models/SGM/libs/boost_1_67_0
-export BOOST_LIB=/Users/Pralit/models/SGM/libs/boost_1_67_0/stage/lib
-export XERCES_INCLUDE=/Users/Pralit/models/SGM/libs/xercesc/include
-export XERCES_LIB=/Users/Pralit/models/SGM/libs/xercesc/lib
+export BOOST_INCLUDE=/Users/Pralit/models/gcam-core/libs/boost_1_67_0
+export BOOST_LIB=/Users/Pralit/models/gcam-core/libs/boost_1_67_0/stage/lib
+export XERCES_INCLUDE=/Users/Pralit/models/gcam-core/libs/xercesc/include
+export XERCES_LIB=/Users/Pralit/models/gcam-core/libs/xercesc/lib
 export JAVA_INCLUDE=/Library/Java/JavaVirtualMachines/jdk-12.0.1.jdk/Contents/Home/include
 export JAVA_LIB=/Library/Java/JavaVirtualMachines/jdk-12.0.1.jdk/Contents/Home/lib/server
 export CXX='c++ -std=c++14'
@@ -96,17 +96,17 @@ export CXX='c++ -std=c++14'
 
 At this point you can build and install with:
 ```bash
-cd gcamdebugr
+cd gcamwrapper
 # To build the R package:
 R CMD install .
 $ To build the Python package:
 pip3 install .
 ```
-Note: Rstudio can be used to build as well and I have had luck opening the project from the terminal with something like `open gcamdebugr.Rproj` and having it inherit the necessary environment variables set above.  Although I think it may be an undocumented feature.
+Note: Rstudio can be used to build as well and I have had luck opening the project from the terminal with something like `open gcamwrapper.Rproj` and having it inherit the necessary environment variables set above.  Although I think it may be an undocumented feature.
 
 #### Windows
 
-On Windows, first you will need to launch the "x64 Native Tools Command Prompt" to ensure all of the Visual Studio environment is set up to compile the gcamdebugr package.  In addition you should ensure `python` and `pip` are found on your `PATH`.  
+On Windows, first you will need to launch the "x64 Native Tools Command Prompt" to ensure all of the Visual Studio environment is set up to compile the gcamwrapper package.  In addition you should ensure `python` and `pip` are found on your `PATH`.  
 The following environment variables must be set.  The paths below are an example and you should substitute the appropriate paths for your system.
 ```bat
 SET GCAM_INCLUDE=C:\GCAM\gcam-core\cvs\objects
@@ -124,7 +124,7 @@ At this point you can build and install with:
 pip install .
 ```
 
-### A simple example on using gcamdebugr
+### A simple example on using gcamwrapper
 
 The following is an example R script:
 ```R
@@ -145,7 +145,7 @@ run_to_period(g, 5L)
 # First save the CO2 emissions before
 # Note we use the [GCAM Fusion](http://jgcri.github.io/gcam-doc/dev-guide/examples.html)
 # syntax to query results with a few additional features:
-# If we include a `+` in a filter it is interpreted by gcamdebugr to
+# If we include a `+` in a filter it is interpreted by gcamwrapper to
 # mean we want to record the name/year of the object seen at the step
 # We add a filter predicate `MatchesAny` which always matches
 co2_core <- get_data(g, "world/region[+NamedFilter,MatchesAny]//ghg[+NamedFilter,StringEquals,CO2]/emissions[+YearFilter,IntEquals,2020]")
@@ -269,11 +269,11 @@ if platform.system() == "Windows" :
     # package
 
 
-import gcamdebugr
+import gcamwrapper
 
 # Create a Gcam instance by giving it a configuration file and the
 # appropriate working directory
-g = gcamdebugr.Gcam("configuration_ref.xml", "C:/GCAM/gcam-core/exe")
+g = gcamwrapper.Gcam("configuration_ref.xml", "C:/GCAM/gcam-core/exe")
 # Run the model up to period 5, the year 2020
 g.run_to_period(5)
 
@@ -283,7 +283,7 @@ g.run_to_period(5)
 # First save the CO2 emissions before
 # Note we use the [GCAM Fusion](http://jgcri.github.io/gcam-doc/dev-guide/examples.html)
 # syntax to query results with a few additional features:
-# If we include a `+` in a filter it is interpreted by gcamdebugr to
+# If we include a `+` in a filter it is interpreted by gcamwrapper to
 # mean we want to record the name/year of the object seen at the step
 # We add a filter predicate `MatchesAny` which always matches
 co2_core = g.get_data("world/region[+NamedFilter,MatchesAny]//ghg[+NamedFilter,StringEquals,CO2]/emissions[+YearFilter,IntEquals,2020]")

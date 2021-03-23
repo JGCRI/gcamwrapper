@@ -57,12 +57,12 @@ gcam_module = Extension(
 
 
 setup(
-    name='gcamdebugr',
+    name='gcamwrapper',
     version='0.1.0',
     packages=find_packages(),
     ext_modules=[gcam_module],
     install_requires=get_requirements(),
-    url='https://stash.pnnl.gov/scm/jgcri/gcamdebugr.git',
+    url='https://stash.pnnl.gov/scm/jgcri/gcamwrapper.git',
     license='ECL 2',
     author='Pralit Patel, Chris R. Vernon',
     author_email='pralit.patel@pnnl.gov, chris.vernon@pnnl.gov',

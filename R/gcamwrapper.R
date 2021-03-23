@@ -1,4 +1,4 @@
-#' @useDynLib gcamdebugr
+#' @useDynLib gcamwrapper
 #' @importFrom Rcpp sourceCpp
 NULL
 

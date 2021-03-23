@@ -1,4 +1,4 @@
-Package: gcamdebugr
+Package: gcamwrapper
 Title: R API for GCAM
 Version: 0.1.0
 Authors@R: c(person("Pralit", "Patel", email = "pralit.patel@pnnl.gov", role = c("aut", "cre"), comment = c(ORCID = "0000-0003-3992-1061")),
