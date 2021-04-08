@@ -5,9 +5,7 @@
 
 #include "solution/util/include/solution_info_set.h"
 #include "solution/util/include/edfun.hpp"
-#ifdef USE_EIGEN
-#include <Eigen/Core>
-#endif
+#include "solution/util/include/ublas-helpers.hpp"
 
 class World;
 class Marketplace;
@@ -60,11 +58,6 @@ public:
 #endif
 
 private:
-#ifdef USE_EIGEN
-  using UBVECTOR = Eigen::VectorXd;
-#else
-  using UBVECTOR = boost::numeric::ublas::vector<double>;
-#endif
 
   World* world;
   Marketplace* marketplace;
