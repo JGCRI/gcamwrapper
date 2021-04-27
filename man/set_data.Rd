@@ -4,14 +4,16 @@
 \alias{set_data}
 \title{Set some aribtrary data into GCAM}
 \usage{
-set_data(gcam, data, path)
+set_data(gcam, data, query, query_params = NULL)
 }
 \arguments{
 \item{gcam}{(gcam) An initialized GCAM instance}
 
 \item{data}{(data.frame) A data.frame with the data to set}
 
-\item{path}{(string) A GCAM fusion-ish search path to determine where to set the data.}
+\item{query}{(string) A GCAM fusion-ish search path to determine where to set the data.}
+
+\item{query_params}{(list[string] -> array(string)) User options to translate placeholder}
 }
 \value{
 GCAM instance

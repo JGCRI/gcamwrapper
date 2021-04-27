@@ -4,6 +4,7 @@
 
 #include "util/base/include/definitions.h"
 #include "util/base/include/configuration.h"
+#include "util/base/include/model_time.h"
 #include "containers/include/scenario.h"
 #include "containers/include/iscenario_runner.h"
 #include "containers/include/scenario_runner_factory.h"
@@ -53,6 +54,7 @@ class gcam {
             Timer timer;
 
             bool success = runner->runScenarios(aPeriod, false, timer);
+            mCurrentPeriod = aPeriod;
             if(!success) {
               Interp::warning("Failed to solve period "+util::toString(aPeriod));
             }
@@ -78,8 +80,29 @@ class gcam {
         return SolutionDebugger::createInstance(aPeriod);
       }
 
+      int getCurrentPeriod() const {
+          if(!isInitialized) {
+              Interp::stop("GCAM did not successfully initialize.");
+          }
+          return mCurrentPeriod;
+      }
+
+      int convertPeriodToYear(const int aPeriod) const {
+          if(!isInitialized) {
+              Interp::stop("GCAM did not successfully initialize.");
+          }
+          return scenario->getModeltime()->getper_to_yr(aPeriod);
+      }
+      int convertYearToPeriod(const int aYear) const {
+          if(!isInitialized) {
+              Interp::stop("GCAM did not successfully initialize.");
+          }
+          return scenario->getModeltime()->getyr_to_per(aYear);
+      }
+
     private:
         bool isInitialized;
+        int mCurrentPeriod;
         LoggerFactoryWrapper loggerFactoryWrapper;
         auto_ptr<IScenarioRunner> runner;
         void initializeScenario(string configurationArg) {
@@ -163,6 +186,9 @@ RCPP_MODULE(gcam_module) {
         .method("set_data", &gcam::setData, "set data")
         .method("get_data", &gcam::getData, "get data")
         .method("create_solution_debugger", &gcam::createSolutionDebugger, "create solution debugger")
+        .method("get_current_period", &gcam::getCurrentPeriod, "get the last run model period")
+        .method("convert_period_to_year", &gcam::convertPeriodToYear, "convert a GCAM model period to year")
+        .method("convert_year_to_period", &gcam::convertYearToPeriod, "convert a GCAM model year to model period")
         ;
 
   Rcpp::class_<SolutionDebugger>("SolutionDebugger")
@@ -192,6 +218,9 @@ BOOST_PYTHON_MODULE(gcam_module) {
         .def("set_data", &gcam::setData, "set data")
         .def("get_data", &gcam::getData, "get data")
         .def("create_solution_debugger", &gcam::createSolutionDebugger, "create solution debugger")
+        .def("get_current_period", &gcam::getCurrentPeriod, "get the last run model period")
+        .def("convert_period_to_year", &gcam::convertPeriodToYear, "convert a GCAM model period to year")
+        .def("convert_year_to_period", &gcam::convertYearToPeriod, "convert a GCAM model year to model period")
         ;
     to_python_converter<Interp::NumericVector, Interp::vec_to_python<Interp::NumericVector> >();
     to_python_converter<Interp::StringVector, Interp::vec_to_python<Interp::StringVector> >();

@@ -26,30 +26,40 @@ create_and_initialize <- function(configuration = "configuration.xml", workdir =
 run_to_period <- function(gcam, period) {
   gcam$run_to_period(period)
 
-  gcam
+  invisible(gcam)
 }
 
 #' Set some aribtrary data into GCAM
 #' @details Use GCAM Fusion to set some table of data into GCAM.
 #' @param gcam (gcam) An initialized GCAM instance
 #' @param data (data.frame) A data.frame with the data to set
-#' @param path (string) A GCAM fusion-ish search path to determine where to set the data.
+#' @param query (string) A GCAM fusion-ish search path to determine where to set the data.
+#' @param query_params (list[string] -> array(string)) User options to translate placeholder
 #' @return GCAM instance
 #' @export
-set_data <- function(gcam, data, path) {
-  gcam$set_data(data, path)
+set_data <- function(gcam, data, query, query_params = NULL) {
+  if(!is.null(query_params)) {
+      query <- apply_query_params(query, query_params, FALSE)
+  }
+  gcam$set_data(data, query)
 }
 
 #' Get some arbitrary data out of GCAM
 #' @details Use GCAM Fusion to get some table of data out of GCAM.
 #' @param gcam (gcam) An initialized GCAM instance
-#' @param path (string) A GCAM fusion-ish search path to determine where to get the data.
+#' @param query (string) A GCAM fusion-ish search path to determine where to get the data.
+#' @param query_params (list[string] -> array(string)) User options to translate placeholder
+#' expressions in query should it have any.
 #' @return A tibble containing the requested data
 #' @export
 #' @importFrom dplyr group_by_at vars summarize_at ungroup as_tibble
 #' @importFrom magrittr %>%
-get_data <- function(gcam, path) {
-  data <- gcam$get_data(path)
+get_data <- function(gcam, query, query_params = NULL) {
+  units <- attr(query, 'units')
+  if(!is.null(query_params)) {
+      query <- apply_query_params(query, query_params, TRUE)
+  }
+  data <- gcam$get_data(query)
   # The data comming out of gcam is unaggregated so we will need to do that now
   # first figure out what the "value" column is, group by everything else, and summarize
   col_names <- names(data)
@@ -58,7 +68,55 @@ get_data <- function(gcam, path) {
   as_tibble(data) %>%
     group_by_at(vars(group_cols)) %>%
     summarize_at(vars(value_col), list(sum)) %>%
-    ungroup()
+    ungroup() -> ret
+  if(!is.null(units)) {
+      attr(ret, 'units') <- units
+  }
+
+  ret
+}
+
+#' Get the last run GCAM model period
+#' @param gcam (gcam) An initialized GCAM instance
+#' @return (integer) The last period used in `run_to_period` wheter it succeeded or failed
+get_current_period <- function(gcam) {
+    gcam$get_current_period()
+}
+
+#' Convert from a GCAM model period to year
+#' @param gcam (gcam) An initialized GCAM instance
+#' @param period (integer vector) The model period to convert to year
+#' @return (integer vector) The corresponding model year
+convert_period_to_year <- function(gcam, period) {
+    if(length(period) == 0) {
+        ret <- c()
+    } else if(length(period) == 1) {
+        ret <- gcam$convert_period_to_year(period)
+    } else {
+        ret <- sapply(period, function(per) {
+                  convert_period_to_year(gcam, per)
+                })
+    }
+
+    ret
+}
+
+#' Convert from a GCAM model year to model period 
+#' @param gcam (gcam) An initialized GCAM instance
+#' @param year (integer vector) The model year to convert to period
+#' @return (integer vector) The corresponding model period 
+convert_year_to_period <- function(gcam, year) {
+    if(length(year) == 0) {
+        ret <- c()
+    } else if(length(year) == 1) {
+        ret <- gcam$convert_year_to_period(year)
+    } else {
+        ret <- sapply(year, function(yr) {
+                  convert_year_to_period(gcam, yr)
+                })
+    }
+
+    ret
 }
 
 #' Create a solution debugging object
@@ -66,10 +124,14 @@ get_data <- function(gcam, path) {
 #' evaluation of the model and see how it affects prices, supplies,
 #' and demands amongst other things.
 #' @param gcam (gcam) An initialized GCAM instance
-#' @param period (integer) GCAM model period to create the debugger
+#' @param period (integer) GCAM model period to create the debugger or if NULL
+#' use the last run model period.
 #' @return A SolutionDebugger object
 #' @export
-create_solution_debugger <- function(gcam, period) {
+create_solution_debugger <- function(gcam, period = NULL) {
+  if(is.null(period)) {
+      period <- get_current_period(gcam)
+  }
   gcam$create_solution_debugger(period)
 }
 

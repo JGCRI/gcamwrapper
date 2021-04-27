@@ -40,7 +40,11 @@ else :
 
 gcam_module = Extension(
     'gcam_module',
-    sources = ['src/gcam.cpp', 'src/solution_debugger.cpp', 'src/set_data_helper.cpp', 'src/get_data_helper.cpp'],
+    sources = ['src/gcam.cpp',
+        'src/solution_debugger.cpp',
+        'src/query_processor_base.cpp',
+        'src/set_data_helper.cpp',
+        'src/get_data_helper.cpp'],
     include_dirs=['inst/include', GCAM_INCLUDE, BOOST_INCLUDE, XERCES_INCLUDE, JAVA_INCLUDE],
     library_dirs=[GCAM_LIB, BOOST_LIB, XERCES_LIB, JAVA_LIB],
     libraries=gcam_libs,

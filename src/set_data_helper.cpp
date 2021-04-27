@@ -10,38 +10,78 @@ using namespace Interp;
 
 class StringVecEquals : public AMatchesValue {
 public:
-  StringVecEquals( const Interp::StringVector& aStr, int& row ):mStr( aStr ), mRow( row ) {}
+  StringVecEquals( const Interp::StringVector& aStr, const int& aRow ):mStr( aStr ), mRow( aRow ) {}
   virtual ~StringVecEquals() {}
   virtual bool matchesString( const std::string& aStrToTest ) const {
     return mStr[mRow] == aStrToTest;
   }
-private:
+protected:
   const Interp::StringVector mStr;
-  int& mRow;
+  const int& mRow;
+};
+class StringVecRegexMatches : public StringVecEquals {
+public:
+  StringVecRegexMatches( const Interp::StringVector& aStr, const int& aRow ):StringVecEquals( aStr, aRow ) {}
+  virtual bool matchesString( const std::string& aStrToTest ) const {
+      // TODO: performance is likely terrible, might want to convert mStr to regex ahead of time
+      std::regex matcher( Interp::extract(mStr[mRow]), std::regex::nosubs | std::regex::optimize | std::regex::egrep );
+      return std::regex_search( aStrToTest, matcher );
+  }
 };
 
 class IntVecEquals : public AMatchesValue {
 public:
-  IntVecEquals( const Interp::IntegerVector& aInt, int& row ):mInt( aInt ), mRow( row ) {}
+  IntVecEquals( const Interp::IntegerVector& aInt, const int& aRow ):mInt( aInt ), mRow( aRow ) {}
   virtual ~IntVecEquals() {}
   virtual bool matchesInt( const int aIntToTest ) const {
     return mInt[mRow] == aIntToTest;
   }
-private:
+protected:
   const Interp::IntegerVector mInt;
-  int& mRow;
+  const int& mRow;
 };
+class IntVecGreaterThan: public IntVecEquals {
+public:
+  IntVecGreaterThan( const Interp::IntegerVector& aInt, const int& aRow ):IntVecEquals( aInt, aRow ) {}
+  virtual bool matchesInt( const int aIntToTest ) const {
+      return aIntToTest > mInt[mRow];
+  }
+};
+class IntVecGreaterThanEq: public IntVecEquals {
+public:
+  IntVecGreaterThanEq( const Interp::IntegerVector& aInt, const int& aRow ):IntVecEquals( aInt, aRow ) {}
+  virtual bool matchesInt( const int aIntToTest ) const {
+      return aIntToTest >= mInt[mRow];
+  }
+};
+class IntVecLessThan: public IntVecEquals {
+public:
+  IntVecLessThan( const Interp::IntegerVector& aInt, const int& aRow ):IntVecEquals( aInt, aRow ) {}
+  virtual bool matchesInt( const int aIntToTest ) const {
+      return aIntToTest < mInt[mRow];
+  }
+};
+class IntVecLessThanEq: public IntVecEquals {
+public:
+  IntVecLessThanEq( const Interp::IntegerVector& aInt, const int& aRow ):IntVecEquals( aInt, aRow ) {}
+  virtual bool matchesInt( const int aIntToTest ) const {
+      return aIntToTest <= mInt[mRow];
+  }
+};
+
+SetDataHelper::SetDataHelper(const Interp::DataFrame& aData, const std::string& aHeader):
+    QueryProcessorBase(),
+    mData(aData),
+    mDataVector(Interp::getDataFrameAt<Interp::NumericVector>(aData, -1)),
+    mRow(0)
+{
+    parseFilterString(aHeader);
+}
 
 void SetDataHelper::run(Scenario* aScenario) {
   GCAMFusion<SetDataHelper> fusion(*this, mFilterSteps);
   for(mRow = 0; mRow < getDataFrameNumRows(mData); ++mRow) {
     fusion.startFilter(aScenario);
-  }
-}
-
-SetDataHelper::~SetDataHelper() {
-  for(auto step : mFilterSteps) {
-    delete step;
   }
 }
 
@@ -66,57 +106,42 @@ void SetDataHelper::processData(T& aData) {
   Interp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
 }
 
-FilterStep* SetDataHelper::parseFilterStepStr( const std::string& aFilterStepStr, int& aCol ) {
-  auto openBracketIter = std::find( aFilterStepStr.begin(), aFilterStepStr.end(), '[' );
-  if( openBracketIter == aFilterStepStr.end() ) {
-    // no filter just the data name
-    return new FilterStep( aFilterStepStr );
-  }
-  else {
-    std::string dataName( aFilterStepStr.begin(), openBracketIter );
-    bool isRead = *(openBracketIter + 1) == '+';
-    int filterOffset = isRead ? 2 : 1;
-    std::string filterStr( openBracketIter + filterOffset, std::find( openBracketIter, aFilterStepStr.end(), ']' ) );
-
+AMatchesValue* SetDataHelper::parsePredicate( const std::vector<std::string>& aFilterOptions, const int aCol, const bool aIsRead ) const {
+    // [0] = filter type (name, year, index)
+    // [1] = match type
+    // [2:] = match type options
     AMatchesValue* matcher = 0;
-    FilterStep* filterStep = 0;
-    if( filterStr == "name" ) {
-      matcher = new StringVecEquals( getDataFrameAt<StringVector>(mData, aCol), mRow );
-      filterStep = new FilterStep( dataName, new NamedFilter( matcher ) );
+    if(!aIsRead) {
+        matcher = QueryProcessorBase::parsePredicate(aFilterOptions, aCol, aIsRead);
     }
-    else if( filterStr == "year" ) {
-      matcher = new IntVecEquals( getDataFrameAt<IntegerVector>(mData, aCol), mRow );
-      filterStep = new FilterStep( dataName, new YearFilter( matcher ) );
-    }
+    else if( aFilterOptions[ 1 ] == "StringEquals" ) {
+            matcher = new StringVecEquals(getDataFrameAt<StringVector>(mData, aCol), mRow);
+        }
+        else if( aFilterOptions[ 1 ] == "StringRegexMatches" ) {
+            matcher = new StringVecRegexMatches(getDataFrameAt<StringVector>(mData, aCol), mRow);
+        }
+        else if( aFilterOptions[ 1 ] == "IntEquals" ) {
+            matcher = new IntVecEquals(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+        }
+        else if( aFilterOptions[ 1 ] == "IntGreaterThan" ) {
+            matcher = new IntVecGreaterThan(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+        }
+        else if( aFilterOptions[ 1 ] == "IntGreaterThanEq" ) {
+            matcher = new IntVecGreaterThanEq(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+        }
+        else if( aFilterOptions[ 1 ] == "IntLessThan" ) {
+            matcher = new IntVecLessThan(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+        }
+        else if( aFilterOptions[ 1 ] == "IntLessThanEq" ) {
+            matcher = new IntVecLessThanEq(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+        }
+        else if( aFilterOptions[ 1 ] == "MatchesAny" ) {
+            matcher = createMatchesAny();
+        }
     else {
-      ILogger& mainLog = ILogger::getLogger( "main_log" );
-      mainLog.setLevel( ILogger::WARNING );
-      mainLog << "Unknown subclass of AMatchesValue: " << filterStr << std::endl;
+        Interp::stop("Unknown filter operand: " + aFilterOptions[ 1 ]);
     }
 
-    if(isRead) {
-      ++aCol;
-    }
-    return filterStep;
-  }
-}
-
-/*!
- * \brief Parse a string to create a list of FilterSteps.
- * \details The string is split on the '/' character so that the contents of each is
- *          assumed to be one FilterStep definition.  Each split string is therefore
- *          parsed further using the helper function parseFilterStepStr.
- * \param aFilterStr A string representing a series of FilterSteps.
- * \return A list of FilterSteps parsed from aFilterStr as detailed above.
- */
-std::vector<FilterStep*> SetDataHelper::parseFilterString(const std::string& aFilterStr ) {
-  std::vector<std::string> filterStepsStr;
-  boost::split( filterStepsStr, aFilterStr, boost::is_any_of( "/" ) );
-  std::vector<FilterStep*> filterSteps( filterStepsStr.size() );
-  int col = 0;
-  for( size_t i = 0; i < filterStepsStr.size(); ++i ) {
-    filterSteps[ i ] = parseFilterStepStr( filterStepsStr[ i ], col );
-  }
-  return filterSteps;
+    return matcher;
 }
 

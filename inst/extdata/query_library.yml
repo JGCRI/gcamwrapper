@@ -1,0 +1,8 @@
+electricity:
+    share_weight: ["world/region{region@name}/sector[NamedFilter,StringEquals,electricity]/subsector{subsector@name}/share-weight{year@year}", "unitless"]
+socioeconomic:
+    labor_productivity: ["world/region{region@name}/GDP/laborproductivity{year@year}", "unitless"]
+    population: ["world/region{region@name}/demographic/population{year@year}/totalPop", "thous ppl"]
+emissions:
+    #TODO: useful for get data but not set
+    co2_emissions: ["world/region{region@name}//ghg[NamedFilter,StringEquals,CO2]/emissions{year@year}", "MTC"]

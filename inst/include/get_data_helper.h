@@ -2,32 +2,31 @@
 #define __GET_DATA_HELPER_H__
 
 #include "interp_interface.h"
+#include "query_processor_base.h"
 #include <string>
 #include <vector>
 
 class Scenario;
-struct FilterStep;
 class AMatcherWrapper;
 
-class GetDataHelper {
+class GetDataHelper : public QueryProcessorBase {
 public:
-  GetDataHelper(const std::string& aHeader)
-  {
-    parseFilterString(aHeader);
-  }
-  ~GetDataHelper();
+  GetDataHelper(const std::string& aHeader);
   Interp::DataFrame run( Scenario* aScenario);
   template<typename T>
   void processData(T& aData);
-private:
+protected:
   std::vector<double> mDataVector;
-  std::vector<int> mYearVector;
-  std::vector<std::string> mColNames;
+  bool mHasYearInPath;
+  //! Keep track of "+" filters which will be doing the recording
   std::vector<AMatcherWrapper*> mPathTracker;
-  std::vector<FilterStep*> mFilterSteps;
 
-  void parseFilterString(const std::string& aFilterStr );
-  FilterStep* parseFilterStepStr( const std::string& aFilterStepStr, int& aCol );
+  //std::vector<int> mYearVector;
+  //std::vector<std::string> mColNames;
+  //std::vector<AMatcherWrapper*> mPathTracker;
+  //std::vector<FilterStep*> mFilterSteps;
+
+  virtual AMatchesValue* wrapPredicate(AMatchesValue* aToWrap, const std::string& aDataName, const bool aIsInt);
   template<typename VecType>
   void vectorDataHelper(VecType& aDataVec);
 };

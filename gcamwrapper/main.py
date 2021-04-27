@@ -1,5 +1,6 @@
 import gcam_module
 from pandas import DataFrame, Series
+from gcamwrapper.query_library import apply_query_params
 
 
 class Gcam (gcam_module.gcam):
@@ -8,16 +9,22 @@ class Gcam (gcam_module.gcam):
        instance.
     """
 
-    def get_data(self, query):
+    def get_data(self, query, query_params = None):
         """Queries for arbitrary data from a running instance of GCAM.
 
         :param query:   GCAM fusion query
         :type query:    str
+        :param query_params: User options to translate placeholder expressions in query should
+                             it have any
+        :type query_params:  dict(string: array(string))
 
         :returns:       DataFrame with the query results.
 
         """
 
+        units = query.units if hasattr(query, "units") else None
+        if query_params != None:
+            query = apply_query_params(query, query_params, True)
         data_dict = super(Gcam, self).get_data(query)
         data_df = DataFrame(data_dict)
         # The data comming out of gcam is unaggregated so we will need to do that now
@@ -25,24 +32,68 @@ class Gcam (gcam_module.gcam):
         # TODO: decide on failure mode when no results
         cols = data_df.columns
         value_col = cols[-2] if cols[-1] == "year" else cols[-1]
-        return data_df.groupby(cols.drop(value_col).to_list(), as_index=False).sum()
+        data_df = data_df.groupby(cols.drop(value_col).to_list(), as_index=False).sum()
+        if units != None:
+            data_df.meta = {'units': units}
+        return data_df
 
-    def set_data(self, data_df, query):
+    def set_data(self, data_df, query, query_params = None):
         """Changes arbitrary data in a running instance of GCAM.
 
         :param data_df:     DataFrame of data to set
         :type data_df:      DataFrame
         :param query:       GCAM fusion query
+        :param query_params: User options to translate placeholder expressions in query should
+                             it have any
+        :type query_params:  dict(string: array(string))
         :type query:        str
 
         """
 
+        if query_params != None:
+            query = apply_query_params(query, query_params, False)
         data_dict = dict()
         for key, value in data_df.items():
             data_dict[key] = value.to_numpy()
         super(Gcam, self).set_data(data_dict, query)
 
-    def create_solution_debugger(self, period):
+    def get_current_period(self):
+        """Get the last run GCAM model period
+
+        :returns: The last period used in `run_to_period` wheter it succeeded or failed
+        """
+
+        return super(Gcam, self).get_current_period()
+
+    def convert_period_to_year(self, period):
+        """Convert from a GCAM model period to year
+
+        :param period: The model period to convert to year
+        :type period: integer or list of integer
+
+        :returns: The corresponding model year(s)
+        """
+
+        if type(period) == int:
+            return super(Gcam, self).convert_period_to_year(period)
+        else:
+            return list(map(lambda x: self.convert_period_to_year(x), period))
+
+    def convert_year_to_period(self, year):
+        """Convert from a GCAM model year to model period
+
+        :param year: The model year to convert to period
+        :type year:integer or list of integer
+
+        :returns: The corresponding model period(s)
+        """
+
+        if type(year) == int:
+            return super(Gcam, self).convert_year_to_period(year)
+        else:
+            return list(map(lambda x: self.convert_year_to_period(x), year))
+
+    def create_solution_debugger(self, period = None):
         """Create a solution debugging object which can be used a single
            evaluation of the model and see how it affects prices, supplies,
            and demands amongst other things..
@@ -54,6 +105,8 @@ class Gcam (gcam_module.gcam):
 
         """
 
+        if period == None:
+            period = self.get_current_period()
         sd = super(Gcam, self).create_solution_debugger(period)
         sd.__class__ = SolutionDebugger
         return sd
