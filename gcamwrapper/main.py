@@ -23,7 +23,7 @@ class Gcam (gcam_module.gcam):
         """
 
         units = query.units if hasattr(query, "units") else None
-        if query_params != None:
+        if query_params is not None:
             query = apply_query_params(query, query_params, True)
         data_dict = super(Gcam, self).get_data(query)
         data_df = DataFrame(data_dict)
@@ -33,7 +33,7 @@ class Gcam (gcam_module.gcam):
         cols = data_df.columns
         value_col = cols[-2] if cols[-1] == "year" else cols[-1]
         data_df = data_df.groupby(cols.drop(value_col).to_list(), as_index=False).sum()
-        if units != None:
+        if units is not None:
             data_df.meta = {'units': units}
         return data_df
 
@@ -50,7 +50,7 @@ class Gcam (gcam_module.gcam):
 
         """
 
-        if query_params != None:
+        if query_params is not None:
             query = apply_query_params(query, query_params, False)
         data_dict = dict()
         for key, value in data_df.items():
@@ -105,7 +105,7 @@ class Gcam (gcam_module.gcam):
 
         """
 
-        if period == None:
+        if period is None:
             period = self.get_current_period()
         sd = super(Gcam, self).create_solution_debugger(period)
         sd.__class__ = SolutionDebugger

@@ -2,6 +2,7 @@ import yaml
 import warnings
 import re
 import os.path as path
+import pkg_resources
 
 def read_yaml(yaml_file):
     '''Read a YAML file.
@@ -16,7 +17,7 @@ def read_yaml(yaml_file):
         return yaml.load(yml, Loader=yaml.FullLoader)
 
 '''The parsed query file included with the package'''
-PACKAGE_QUERIES = read_yaml(path.join(path.dirname(__file__), '../inst/extdata/query_library.yml'))
+PACKAGE_QUERIES = yaml.load(pkg_resources.resource_stream(__name__, 'query_library.yml'), Loader=yaml.FullLoader)
 
 class Query(str):
     '''A Simple extension to str to be able to associate units meta data'''
@@ -38,7 +39,7 @@ def get_query(*args, query_file = None):
               if specified
     '''
 
-    if query_file == None:
+    if query_file is None:
         queries = PACKAGE_QUERIES
     else:
         queries = read_yaml(query_file)
@@ -125,7 +126,7 @@ def parse_int_query_param(param_operands, is_get_data):
     except (ValueError, AttributeError) as e:
         plus_op = '+' if is_get_data else ''
     ret = '[' + plus_op
-    if param_operands == None or len(param_operands) == 0 or param_operands[0] == '*':
+    if param_operands is None or len(param_operands) == 0 or param_operands[0] == '*':
         ret += 'YearFilter,' + wrapper_to_fusion_lookup['*']
     elif not is_get_data and plus_op == '+':
         if len(param_operands) < 1:
@@ -172,7 +173,7 @@ def parse_str_query_param(param_operands, is_get_data):
     except (ValueError, AttributeError) as e:
         plus_op = '+' if is_get_data else ''
     ret = '[' + plus_op + 'NamedFilter,'
-    if param_operands == None or len(param_operands) == 0 or param_operands[0] == '*':
+    if param_operands is None or len(param_operands) == 0 or param_operands[0] == '*':
         ret += wrapper_to_fusion_lookup['*']
     elif not is_get_data and plus_op == '+':
         if len(param_operands) < 1:

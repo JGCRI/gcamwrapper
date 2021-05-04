@@ -1,4 +1,4 @@
-import os, platform
+import os, platform, shutil
 
 from setuptools import setup, find_packages, Extension
 
@@ -60,18 +60,25 @@ gcam_module = Extension(
     )
 
 
-setup(
-    name='gcamwrapper',
-    version='0.1.0',
-    packages=find_packages(),
-    ext_modules=[gcam_module],
-    install_requires=get_requirements(),
-    url='https://github.com/JGCRI/gcamwrapper',
-    license='ECL 2',
-    author='Pralit Patel, Chris R. Vernon',
-    author_email='pralit.patel@pnnl.gov, chris.vernon@pnnl.gov',
-    description='Python API for GCAM',
-    long_description=readme(),
-    python_requires='>=3.6.*, <4'
-)
- 
+try:
+    # workaround to deal with R and Python being PITA about package data
+    shutil.copy(os.path.join('inst', 'extdata', 'query_library.yml'), 'gcamwrapper')
+    setup(
+        name='gcamwrapper',
+        version='0.1.0',
+        packages=find_packages(),
+        ext_modules=[gcam_module],
+        install_requires=get_requirements(),
+        #include_package_data=True,
+        package_data={'gcamwrapper': ['query_library.yml']},
+        url='https://github.com/JGCRI/gcamwrapper',
+        license='ECL 2',
+        author='Pralit Patel, Chris R. Vernon',
+        author_email='pralit.patel@pnnl.gov, chris.vernon@pnnl.gov',
+        description='Python API for GCAM',
+        long_description=readme(),
+        python_requires='>=3.6.*, <4'
+    )
+finally:
+    os.unlink(os.path.join('gcamwrapper', 'query_library.yml'))
+     
