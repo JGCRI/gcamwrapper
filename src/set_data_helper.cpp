@@ -8,6 +8,9 @@
 using namespace std;
 using namespace Interp;
 
+// Implementations of all the standard GCAM Fusion predicates however with the
+// value to be compared against comping from a vector instead of specified explicitly
+
 class StringVecEquals : public AMatchesValue {
 public:
   StringVecEquals( const Interp::StringVector& aStr, const int& aRow ):mStr( aStr ), mRow( aRow ) {}
@@ -69,6 +72,12 @@ public:
   }
 };
 
+/*!
+ * \brief Prepare to run the given query.
+ * \param aData The DataFrame to read name/year values to compare against,
+ *              as well as the values to set.
+ * \param aQuery The GCAM Fusion query to be parsed
+ */
 SetDataHelper::SetDataHelper(const Interp::DataFrame& aData, const std::string& aHeader):
     QueryProcessorBase(),
     mData(aData),
@@ -78,12 +87,76 @@ SetDataHelper::SetDataHelper(const Interp::DataFrame& aData, const std::string& 
     parseFilterString(aHeader);
 }
 
+/*!
+ * \brief Run the query against the given Scenario context and
+ *        set the data processing the DataFrame row by row.
+ * \param aScenario The Scenario object which will serve as the
+ *                  query context from which to evaluate the query.
+ */
 void SetDataHelper::run(Scenario* aScenario) {
   GCAMFusion<SetDataHelper> fusion(*this, mFilterSteps);
   for(mRow = 0; mRow < getDataFrameNumRows(mData); ++mRow) {
     fusion.startFilter(aScenario);
   }
 }
+
+/*!
+ * \brief Parse individual components of a filter.
+ * \details If aIsRead is set we return a "vectorized" implementation of the
+ *          requested predicate and the value to be compared against will come
+ *          from the columns of mData.  If not the base class implementation is
+ *          called instead.
+ * \param aFilterOptions The parsed components of a filter where the first value
+ *                       sets the type (name, year, index), the second is the
+ *                       predicate (equals, greater than, etc), and any other
+ *                       values are additional arguments to the predicate.
+ * \param aCol The current column number which should correspond to a DataFrame
+ *             which is useful should this be a Set Data operation.
+ * \param aIsRead If the `+` option was specified in which case the specialized
+ *                Get / Set Data behavior will be enabled.
+ * \return The corresponding AMatchesValue instance for the options given.
+ */
+AMatchesValue* SetDataHelper::parsePredicate( const std::vector<std::string>& aFilterOptions, const int aCol, const bool aIsRead ) const {
+    // [0] = filter type (name, year, index)
+    // [1] = match type
+    // [2:] = match type options (ignored if aIsRead)
+    AMatchesValue* matcher = 0;
+    if(!aIsRead) {
+        matcher = QueryProcessorBase::parsePredicate(aFilterOptions, aCol, aIsRead);
+    }
+    else if( aFilterOptions[ 1 ] == "StringEquals" ) {
+        matcher = new StringVecEquals(getDataFrameAt<StringVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "StringRegexMatches" ) {
+        matcher = new StringVecRegexMatches(getDataFrameAt<StringVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "IntEquals" ) {
+        matcher = new IntVecEquals(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "IntGreaterThan" ) {
+        matcher = new IntVecGreaterThan(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "IntGreaterThanEq" ) {
+        matcher = new IntVecGreaterThanEq(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "IntLessThan" ) {
+        matcher = new IntVecLessThan(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "IntLessThanEq" ) {
+        matcher = new IntVecLessThanEq(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "MatchesAny" ) {
+        matcher = createMatchesAny();
+    }
+    else {
+        Interp::stop("Unknown filter operand: " + aFilterOptions[ 1 ]);
+    }
+
+    return matcher;
+}
+
+// GCAM Fusion callbacks to set the data with specializations for all of the
+// types that we support:
 
 template<>
 void SetDataHelper::processData(double& aData) {
@@ -104,44 +177,5 @@ void SetDataHelper::processData(std::pair<unsigned int const, double>& aData) {
 template<typename T>
 void SetDataHelper::processData(T& aData) {
   Interp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
-}
-
-AMatchesValue* SetDataHelper::parsePredicate( const std::vector<std::string>& aFilterOptions, const int aCol, const bool aIsRead ) const {
-    // [0] = filter type (name, year, index)
-    // [1] = match type
-    // [2:] = match type options
-    AMatchesValue* matcher = 0;
-    if(!aIsRead) {
-        matcher = QueryProcessorBase::parsePredicate(aFilterOptions, aCol, aIsRead);
-    }
-    else if( aFilterOptions[ 1 ] == "StringEquals" ) {
-            matcher = new StringVecEquals(getDataFrameAt<StringVector>(mData, aCol), mRow);
-        }
-        else if( aFilterOptions[ 1 ] == "StringRegexMatches" ) {
-            matcher = new StringVecRegexMatches(getDataFrameAt<StringVector>(mData, aCol), mRow);
-        }
-        else if( aFilterOptions[ 1 ] == "IntEquals" ) {
-            matcher = new IntVecEquals(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
-        }
-        else if( aFilterOptions[ 1 ] == "IntGreaterThan" ) {
-            matcher = new IntVecGreaterThan(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
-        }
-        else if( aFilterOptions[ 1 ] == "IntGreaterThanEq" ) {
-            matcher = new IntVecGreaterThanEq(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
-        }
-        else if( aFilterOptions[ 1 ] == "IntLessThan" ) {
-            matcher = new IntVecLessThan(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
-        }
-        else if( aFilterOptions[ 1 ] == "IntLessThanEq" ) {
-            matcher = new IntVecLessThanEq(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
-        }
-        else if( aFilterOptions[ 1 ] == "MatchesAny" ) {
-            matcher = createMatchesAny();
-        }
-    else {
-        Interp::stop("Unknown filter operand: " + aFilterOptions[ 1 ]);
-    }
-
-    return matcher;
 }
 

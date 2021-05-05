@@ -9,8 +9,8 @@ using namespace std;
 using namespace Interp;
 
 /*!
- * \brief A wrapper around an AMatchesValue so that we can record to / read from
- *        a DataFrame the current values that may be matched by AMatchesValue.
+ * \brief A wrapper around an AMatchesValue so that we can record to a DataFrame
+ *        the current values that may be matched by AMatchesValue.
  */
 class AMatcherWrapper : public AMatchesValue {
 public:
@@ -89,8 +89,18 @@ public:
     vector<int> mData;
 };
 
-GetDataHelper::GetDataHelper(const std::string& aHeader):QueryProcessorBase() {
-    parseFilterString(aHeader);
+/*!
+ * \brief Prepare to run the given query.
+ * \param aQuery The GCAM Fusion query to be parsed
+ */
+GetDataHelper::GetDataHelper(const std::string& aQuery):QueryProcessorBase() {
+    // parse the query into filter steps
+    parseFilterString(aQuery);
+
+    // determine if a user already filtered a period vector of data
+    // if not, and we are in fact querying a vector of data, we will
+    // add it for them
+    mHasYearInPath = false;
     for(auto tracker : mPathTracker) {
         if(tracker->getDataName() == "year") {
             mHasYearInPath = true;
@@ -98,20 +108,53 @@ GetDataHelper::GetDataHelper(const std::string& aHeader):QueryProcessorBase() {
     }
 }
 
+/*!
+ * \brief Run the query against the given Scenario context and
+ *        return the results as a DataFrame.
+ * \param aScenario The Scenario object which will serve as the
+ *                  query context from which to evaluate the query.
+ * \return A DataFrame where the columns include all the name/year
+ *         of the GCAM CONTAINER the user indicated they wanted to
+ *         record and the last column holds the values that results
+ *         from the query.
+ */
 DataFrame GetDataHelper::run(Scenario* aScenario) {
+  // run the query, the specialized filters will keep track
+  // of matching data to use as columns as it processes
   GCAMFusion<GetDataHelper> fusion(*this, mFilterSteps);
   fusion.startFilter(aScenario);
+
+  // extract the data from the path tracking filters and
+  // organize them as columns in a DataFrame
   DataFrame ret = Interp::createDataFrame();
   size_t i = 0;
   for(i = 0; i < mPathTracker.size(); ++i) {
       mPathTracker[i]->updateDataFrame(ret);
   }
+  // the actual values will be the final column
   ret[mDataColName] = Interp::wrap(mDataVector);
   return ret;
 }
 
+AMatchesValue* GetDataHelper::wrapPredicate(AMatchesValue* aToWrap, const std::string& aDataName, const bool aIsInt) {
+    // if the user intended to record the value at this filter then we just
+    // wrap whatever filter they set with the path tracking filter
+    AMatcherWrapper* ret = aIsInt ?
+        static_cast<AMatcherWrapper*>(new IntMatcherWrapper(aToWrap, aDataName )) :
+        static_cast<AMatcherWrapper*>(new StrMatcherWrapper( aToWrap, aDataName ));
+    // and add it to the list so we can trigger them to record values when a query
+    // successfully matches data
+    mPathTracker.push_back(ret);
+    return ret;
+}
+
+// GCAM Fusion callbacks with specializations for all of the types that
+// we support:
+
 template<>
 void GetDataHelper::processData(double& aData) {
+    // add the value which matched and have the tracking filters
+    // record their current values to include in this row
     mDataVector.push_back(aData);
     for(auto path: mPathTracker) {
         path->recordPath();
@@ -119,6 +162,8 @@ void GetDataHelper::processData(double& aData) {
 }
 template<>
 void GetDataHelper::processData(Value& aData) {
+    // add the value which matched and have the tracking filters
+    // record their current values to include in this row
     mDataVector.push_back(aData);
     for(auto path: mPathTracker) {
         path->recordPath();
@@ -126,6 +171,8 @@ void GetDataHelper::processData(Value& aData) {
 }
 template<>
 void GetDataHelper::processData(int& aData) {
+    // add the value which matched and have the tracking filters
+    // record their current values to include in this row
     mDataVector.push_back(aData);
     for(auto path: mPathTracker) {
         path->recordPath();
@@ -173,37 +220,45 @@ void GetDataHelper::processData(objects::YearVector<double>& aData) {
 }
 template<>
 void GetDataHelper::processData(std::map<unsigned int, double>& aData) {
+  // the user did not explicitly specify a year filter for this data but
+  // it seems better to assume they did rather than implicitly aggregate
+  // accross model periods
+  // so let's add the path tracking filter to record all years the first
+  // time we see this for them
   if(!mHasYearInPath) {
       mPathTracker.push_back(new IntMatcherWrapper(createMatchesAny(), "year"));
       mHasYearInPath = true;
   }
   for(auto iter = aData.begin(); iter != aData.end(); ++iter) {
+    // update the year path tracker which would not have had to match thus far
+    // as an ARRAY is not a CONTAINER
     (*mPathTracker.rbegin())->matchesInt(GetIndexAsYear::convertIterToYear(aData, iter));
+    // deletegate to processData to take care of the rest
     processData((*iter).second);
   }
 }
 template<typename VecType>
 void GetDataHelper::vectorDataHelper(VecType& aDataVec) {
+  // the user did not explicitly specify a year filter for this data but
+  // it seems better to assume they did rather than implicitly aggregate
+  // accross model periods
+  // so let's add the path tracking filter to record all years the first
+  // time we see this for them
   if(!mHasYearInPath) {
       mPathTracker.push_back(new IntMatcherWrapper(createMatchesAny(), "year"));
       mHasYearInPath = true;
   }
-    for(auto iter = aDataVec.begin(); iter != aDataVec.end(); ++iter) {
+  for(auto iter = aDataVec.begin(); iter != aDataVec.end(); ++iter) {
+    // update the year path tracker which would not have had to match thus far
+    // as an ARRAY is not a CONTAINER
     (*mPathTracker.rbegin())->matchesInt(GetIndexAsYear::convertIterToYear(aDataVec, iter));
-        processData(*iter);
-    }
+    // deletegate to processData to take care of the rest
+    processData(*iter);
+  }
 }
 
 template<typename T>
 void GetDataHelper::processData(T& aData) {
   Interp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
-}
-
-AMatchesValue* GetDataHelper::wrapPredicate(AMatchesValue* aToWrap, const std::string& aDataName, const bool aIsInt) {
-    AMatcherWrapper* ret = aIsInt ?
-        static_cast<AMatcherWrapper*>(new IntMatcherWrapper(aToWrap, aDataName )) :
-        static_cast<AMatcherWrapper*>(new StrMatcherWrapper( aToWrap, aDataName ));
-    mPathTracker.push_back(ret);
-    return ret;
 }
 

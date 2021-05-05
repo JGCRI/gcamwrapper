@@ -9,10 +9,21 @@
 class Scenario;
 struct FilterStep;
 
+/*!
+ * \brief A GCAM Fusion class that will run arbitrary queries but determine the
+ *        name/year to filter by reading a DataFrame and ultimately update the
+ *        queried data with the value from the DataFrame.
+ * \details The query syntax is slightly modified from the standard GCAM Fusion
+ *          syntax in that any filter step that starts with a `+` is interpereted
+ *          to mean read the name/year to compare from a column of a given DataFrame.
+ *          Queries will be performed row by row until all data is set.
+ */
 class SetDataHelper : public QueryProcessorBase {
 public:
-  SetDataHelper(const Interp::DataFrame& aData, const std::string& aHeader);
-  void run( Scenario* aScenario);
+  SetDataHelper(const Interp::DataFrame& aData, const std::string& aQuery);
+
+  void run(Scenario* aScenario);
+
   template<typename T>
   void processData(T& aData);
 protected:
