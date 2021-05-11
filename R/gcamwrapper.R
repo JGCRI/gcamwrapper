@@ -17,13 +17,21 @@ create_and_initialize <- function(configuration = "configuration.xml", workdir =
 
 #' Run model period
 #' @details This will run the given GCAM instance for all periods up
-#' and including the given period
+#' and including the given period.  Model periods which have already
+#' been run will be kept track of and will not be run again.  HOWEVER,
+#' we do not attempt to keep track of if those model periods are "dirty"
+#' such as if a user has called `set_data` in such a way that would invalidate
+#' that solution.
 #' @param gcam (gcam) An initialized GCAM instance
-#' @param period (integer) The GCAM model period to run up to
+#' @param period (integer) The GCAM model period to run up to or the
+#" `get_current_period` + 1 if \code{NULL}
 #' @return GCAM instance
 #' @importFrom Rcpp cpp_object_initializer
 #' @export
-run_to_period <- function(gcam, period) {
+run_to_period <- function(gcam, period = NULL) {
+  if(is.null(period)) {
+      period <- get_current_period(gcam) + 1
+  }
   gcam$run_to_period(period)
 
   invisible(gcam)

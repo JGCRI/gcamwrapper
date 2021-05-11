@@ -9,6 +9,23 @@ class Gcam (gcam_module.gcam):
        instance.
     """
 
+    def run_to_period(self, period = None):
+        """ Run GCAM up to and including some model period.
+            Model periods which have already been run will be kept track
+            of and will not be run again.  HOWEVER, we do not attempt to
+            keep track of if those model periods are "dirty" such as if
+            a user has called `set_data` in such a way that would invalidate
+            that solution.
+
+        :param period: The model period to run or the `get_current_period` + 1
+                       if None
+        :type period: int
+        """
+
+        if period is None:
+            period = self.get_current_period() + 1
+        super(Gcam, self).run_to_period(period)
+
     def get_data(self, query, query_params = None):
         """Queries for arbitrary data from a running instance of GCAM.
 

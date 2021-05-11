@@ -29,7 +29,7 @@ Scenario* scenario;
 
 class gcam {
     public:
-        gcam(string aConfiguration, string aWorkDir):isInitialized(false) {
+        gcam(string aConfiguration, string aWorkDir):isInitialized(false), mCurrentPeriod(0) {
             try {
                 boost::filesystem::current_path(boost::filesystem::path(aWorkDir));
             } catch(...) {
