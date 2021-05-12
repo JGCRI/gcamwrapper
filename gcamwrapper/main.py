@@ -82,6 +82,14 @@ class Gcam (gcam_module.gcam):
 
         return super(Gcam, self).get_current_period()
 
+    def get_current_year(self):
+        """Get the last run GCAM model year
+
+        :returns: The last period used in `run_to_period` wheter it succeeded or failed but converted to year
+        """
+
+        return self.convert_period_to_year(self.get_current_period())
+
     def convert_period_to_year(self, period):
         """Convert from a GCAM model period to year
 

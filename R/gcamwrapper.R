@@ -91,6 +91,14 @@ get_current_period <- function(gcam) {
     gcam$get_current_period()
 }
 
+#' Get the last run GCAM model year
+#' @param gcam (gcam) An initialized GCAM instance
+#' @return (integer) The last period used in `run_to_period` wheter it
+#" succeeded or failed but converted to year
+get_current_year <- function(gcam) {
+    convert_period_to_year(gcam, get_current_period(gcam))
+}
+
 #' Convert from a GCAM model period to year
 #' @param gcam (gcam) An initialized GCAM instance
 #' @param period (integer vector) The model period to convert to year
