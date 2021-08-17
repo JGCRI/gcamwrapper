@@ -153,11 +153,6 @@ NumericVector SolutionDebugger::evaluatePartial(const double aPrice, const int a
 }
 
 NumericMatrix SolutionDebugger::calcDerivative() {
-#ifdef USE_EIGEN
-  using UBMATRIX = Eigen::MatrixXd;
-#else
-  using UBMATRIX = boost::numeric::ublas::matrix<double>;
-#endif
   UBMATRIX jac(nsolv,nsolv);
   fdjac(F, x, fx, jac, true);
   NumericMatrix jacRet = wrapMatrix(jac, nsolv);

@@ -6,24 +6,6 @@ The gcamwrapper contains all C++ and R/python source code to wrap the [GCAM](htt
 
 This package **does not** contain the GCAM model.  In other words users still need to [build GCAM](http://jgcri.github.io/gcam-doc/gcam-build.html) and [run the data system](http://jgcri.github.io/gcam-doc/data-system.html) before building this package as it will need to compile against it.  In addition it also implies an install of this package is tied to that specific version of GCAM and users should not expect it to be compatible with any other versions of GCAM.
 
-### Changes required in GCAM
-
-At the time of this writing one change is required to GCAM itself to be compatible with gcamwrapper which is to modify `cvs/objects/containers/include/scenario.h`:
-```diff
-diff --git a/cvs/objects/containers/include/scenario.h b/cvs/objects/containers/include/scenario.h
-index 7f93c85b9..43d980916 100644
---- a/cvs/objects/containers/include/scenario.h
-+++ b/cvs/objects/containers/include/scenario.h
-@@ -88,6 +88,7 @@ class ManageStateVariables;
- class Scenario: public IParsable, public IVisitable
- {
-     friend class LogEDFun;
-+    friend class gcam;
- public:
-     Scenario();
-     ~Scenario();
-```
-
 ### Creating a libgcam to link to
 
 At the time of this writing some build systems may not generate a suitable libgcam, a compiled library of GCAM's C++ source, to link gcamwrapper to.  However some simple steps could be taken to create it depending on which system you are using to compile GCAM:
@@ -89,6 +71,9 @@ export BOOST_INCLUDE=/Users/Pralit/models/gcam-core/libs/boost_1_67_0
 export BOOST_LIB=/Users/Pralit/models/gcam-core/libs/boost_1_67_0/stage/lib
 export XERCES_INCLUDE=/Users/Pralit/models/gcam-core/libs/xercesc/include
 export XERCES_LIB=/Users/Pralit/models/gcam-core/libs/xercesc/lib
+export EIGEN_INCLUDE=/Users/pralitp/models/gcam-core/libs/eigen
+export TBB_INCLUDE=/Users/pralitp/models/gcam-core/libs/tbb/include
+export TBB_LIB=/Users/pralitp/models/gcam-core/libs/tbb/lib
 export JAVA_INCLUDE=/Library/Java/JavaVirtualMachines/jdk-12.0.1.jdk/Contents/Home/include
 export JAVA_LIB=/Library/Java/JavaVirtualMachines/jdk-12.0.1.jdk/Contents/Home/lib/server
 export CXX='c++ -std=c++14'
@@ -115,6 +100,9 @@ SET BOOST_INCLUDE=C:\GCAM\libs\boost-lib
 SET BOOST_LIB=C:\GCAM\libs\boost-lib\stage\lib
 SET XERCES_INCLUDE=C:\GCAM\libs\xercesc\include
 SET XERCES_LIB=C:\GCAM\libs\xercesc\lib
+SET EIGEN_INCLUDE=C:\GCAM\libs\eigen
+SET TBB_INCLUDE=C:\GCAM\libs\tbb\include
+SET TBB_LIB=C:\GCAM\libs\tbb\lib
 SET JAVA_INCLUDE=C:\Program Files\Java\jdk-15.0.1\include
 SET JAVA_LIB=C:\Program Files\Java\jdk-15.0.1\lib
 ```
