@@ -86,6 +86,9 @@ find_placeholders <- function(query_str) {
             ret[ph_split[1]] = ph_split[2]
         }
     }
+    if(length(raw_placeholders) != length(ret)) {
+        stop(paste0('Duplicate placeholder tags in ', query_str))
+    }
 
     return(ret)
 }
