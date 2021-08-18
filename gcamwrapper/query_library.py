@@ -1,7 +1,6 @@
 import yaml
 import warnings
 import re
-import os.path as path
 import pkg_resources
 
 def read_yaml(yaml_file):
@@ -23,7 +22,13 @@ class Query(str):
     '''A Simple extension to str to be able to associate units meta data'''
     units: None
 
-def get_query(*args, query_file = None):
+class QuerySyntaxException(Exception):
+    '''An Exception type used to signal gcamwrapper Query syntax error either in the
+       Query itself or in the place holder replacements provided by the users.
+    '''
+    pass
+
+def get_query(*args, query_file=None):
     '''Look up a query from a YAML file.
        The YAML query files will often be organized into nested categories
        so users must provide the full path as individual strings such as:
@@ -48,16 +53,19 @@ def get_query(*args, query_file = None):
         try:
             query = query[path]
         except KeyError:
-            raise Exception("Could not find query: ", args)
+            raise(f"Could not find query:  {args}") 
 
     if len(query) == 0:
-        raise Exception("Could not find query: ", args)
+        raise Exception(f"Could not find query:  {args}")
     query_str = Query(query[0])
     if len(query) > 1:
         query_str.units = query[1]
+    if len(query) > 2:
+        warnings.warn(f"Additional elements for {args} are ignored, expecting only <query> <units>")
 
     return query_str
 
+# TODO: Remove when we build Sphinx docs
 # Design doc:
 # change get/set data to accept a query_args argument that is a dict/list
 # used to substitute {arg_tag@arg_type} tags from the query database with the rules:
@@ -91,11 +99,14 @@ def find_placeholders(query_str):
     for placeholder in raw_placeholders:
         ph_split = placeholder.split('@')
         if len(ph_split) != 2:
-            raise Exception('Invalid placeholder syntax: ', placeholder, 'expecting two values split by @')
+            raise QuerySyntaxException(f"Invalid placeholder syntax: {placeholder} expecting two values split by @")
         elif ph_split[1] != 'name' and ph_split[1] != 'year':
-            raise Exception('Invalid placeholder syntax, unknown type: ', ph_split[1], 'expecting name or year')
+            raise QuerySyntaxException(f"Invalid placeholder syntax, unknown type: {ph_split[1]} expecting name or year")
         else:
             ret[ph_split[0]] = ph_split[1]
+
+    if len(raw_placeholders) != len(ret):
+        raise QuerySyntaxException(f"Duplicate placeholder tags in {query_str}")
 
     return ret
 
@@ -123,26 +134,32 @@ def parse_int_query_param(param_operands, is_get_data):
     try:
         plus_index = param_operands.index('+')
         plus_op = param_operands.pop(plus_index)
-    except (ValueError, AttributeError) as e:
-        plus_op = '+' if is_get_data else ''
+    except (ValueError, AttributeError):
+        if is_get_data:
+            plus_op = '+'
+        else:
+            plus_op = ''
     ret = '[' + plus_op
     if param_operands is None or len(param_operands) == 0 or param_operands[0] == '*':
         ret += 'YearFilter,' + wrapper_to_fusion_lookup['*']
     elif not is_get_data and plus_op == '+':
         if len(param_operands) < 1:
-            raise Exception('Invalid query parameter spec: ', param_operands)
+            raise QuerySyntaxException(f"Invalid query parameter spec: {param_operands}")
         ret += 'YearFilter,' + wrapper_to_fusion_lookup[param_operands[0]]
     elif len(param_operands) == 2 and param_operands[0] in wrapper_to_fusion_lookup.keys():
         try:
             operandAsInt = int(param_operands[1])
         except ValueError:
-            raise Exception('Expecting integer operand, got: ', param_operands)
+            raise QuerySyntaxException(f"Expecting integer operand, got: {param_operands}")
         # if the int value looks like a date assume YearFilter otherwise it is
         # a model period
-        ret += 'YearFilter,' if operandAsInt > 1000 else 'IndexFilter,'
+        if operandAsInt > 1000:
+            ret += 'YearFilter,'
+        else:
+            ret += 'IndexFilter,'
         ret += wrapper_to_fusion_lookup[param_operands[0]] + ',' + str(operandAsInt)
     else:
-        raise Exception('Invalid query parameter spec: ', param_operands)
+        raise QuerySyntaxException(f"Invalid query parameter spec: {param_operands}")
     ret += ']'
     return ret
 
@@ -171,18 +188,21 @@ def parse_str_query_param(param_operands, is_get_data):
         plus_index = param_operands.index('+')
         plus_op = param_operands.pop(plus_index)
     except (ValueError, AttributeError) as e:
-        plus_op = '+' if is_get_data else ''
+        if is_get_data:
+            plus_op = '+' 
+        else:
+            plus_op = ''
     ret = '[' + plus_op + 'NamedFilter,'
     if param_operands is None or len(param_operands) == 0 or param_operands[0] == '*':
         ret += wrapper_to_fusion_lookup['*']
     elif not is_get_data and plus_op == '+':
         if len(param_operands) < 1:
-            raise Exception('Invalid query parameter spec: ', param_operands)
+            raise QuerySyntaxException(f"Invalid query parameter spec: {param_operands}")
         ret += wrapper_to_fusion_lookup[param_operands[0]]
     elif len(param_operands) == 2 and param_operands[0] in wrapper_to_fusion_lookup.keys():
         ret += wrapper_to_fusion_lookup[param_operands[0]] + ',' + param_operands[1]
     else:
-        raise Exception('Invalid query parameter spec: ', param_operands)
+        raise QuerySyntaxException(f"Invalid query parameter spec: {param_operands}")
     ret += ']'
     return ret
 
@@ -217,7 +237,10 @@ def apply_query_params(query, query_params, is_get_data):
             warnings.warn(param+' has no placeholders in '+query)
         else:
             # note error checking on placeholder types has already occurred
-            parsed_params[param+'@'+placeholders[param]] = parse_int_query_param(args, is_get_data) if placeholders[param] == 'year' else parse_str_query_param(args, is_get_data)
+            if placeholders[param] == 'year':
+                parsed_params[param+'@'+placeholders[param]] = parse_int_query_param(args, is_get_data)
+            else:
+                parsed_params[param+'@'+placeholders[param]] = parse_str_query_param(args, is_get_data)
 
     # TODO: better syntax?
     for param, ptype in placeholders.items():
@@ -226,26 +249,3 @@ def apply_query_params(query, query_params, is_get_data):
 
     return query.format(**parsed_params)
 
-
-if __name__ == '__main__':
-
-    config_file = 'get_data_queries.yml'
-    yr = 2020
-    #config = read_yaml(config_file)
-    # get the query for CO2 emissions for year yr
-    query_str = get_query('emissions', 'co2_emissions')#.format(region='USA', year=yr)
-    print('Raw query:')
-    print(query_str)
-
-    # replaces all tqgs
-    print('Set all args')
-    print(apply_query_params(query_str, { 'region': ['=', 'USA'], 'year': ['=', yr] }, True))
-    # omits region so should 'collapse' it
-    print('Omit region')
-    print(apply_query_params(query_str, { 'year': ['=', yr] }, True))
-    print('Omit region, set data')
-    print(apply_query_params(query_str, { 'year': ['=', yr] }, False))
-    print(apply_query_params(query_str, { 'year': ['+', '=', yr] }, False))
-    # tries to set some unknown tag so should get warning
-    print('Set unknown instead of year:')
-    print(apply_query_params(query_str, { 'region': ['=~', 'USA'], 'asdf': ['=', yr] }, False))

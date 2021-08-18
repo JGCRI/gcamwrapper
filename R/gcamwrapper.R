@@ -87,6 +87,7 @@ get_data <- function(gcam, query, query_params = NULL) {
 #' Get the last run GCAM model period
 #' @param gcam (gcam) An initialized GCAM instance
 #' @return (integer) The last period used in `run_to_period` wheter it succeeded or failed
+#' @export
 get_current_period <- function(gcam) {
     gcam$get_current_period()
 }
@@ -95,6 +96,7 @@ get_current_period <- function(gcam) {
 #' @param gcam (gcam) An initialized GCAM instance
 #' @return (integer) The last period used in `run_to_period` wheter it
 #" succeeded or failed but converted to year
+#' @export
 get_current_year <- function(gcam) {
     convert_period_to_year(gcam, get_current_period(gcam))
 }
@@ -103,6 +105,7 @@ get_current_year <- function(gcam) {
 #' @param gcam (gcam) An initialized GCAM instance
 #' @param period (integer vector) The model period to convert to year
 #' @return (integer vector) The corresponding model year
+#' @export
 convert_period_to_year <- function(gcam, period) {
     if(length(period) == 0) {
         ret <- c()
@@ -121,6 +124,7 @@ convert_period_to_year <- function(gcam, period) {
 #' @param gcam (gcam) An initialized GCAM instance
 #' @param year (integer vector) The model year to convert to period
 #' @return (integer vector) The corresponding model period 
+#' @export
 convert_year_to_period <- function(gcam, year) {
     if(length(year) == 0) {
         ret <- c()

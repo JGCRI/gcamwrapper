@@ -1,11 +1,9 @@
-#library(yaml)
-#library(stringr)
 
 
 #' Load the package queries from YAML
 #' @importFrom yaml read_yaml
 parse_package_queries <- function() {
-    package_queries = yaml::read_yaml(system.file('extdata', 'query_library.yml', package="gcamwrapper"))
+    package_queries = read_yaml(system.file('extdata', 'query_library.yml', package="gcamwrapper"))
 
     package_queries
 }
@@ -43,10 +41,14 @@ get_query <- function(..., query_file = NULL) {
     if(length(query) > 1) {
         attr(query_str, "units") <- query[2]
     }
+    if(length(query) > 2) {
+        warning(paste0("Additional elements for ", query_path, " are ignored, expecting only <query> <units>"))
+    }
 
     return(query_str)
 }
 
+# TODO: move to some external documentation
 # Design doc:
 # change get/set data to accept a query_args argument that is a dict/list
 # used to substitute {arg_tag@arg_type} tags from the query database with the rules:
@@ -216,23 +218,3 @@ apply_query_params <- function(query, query_params, is_get_data) {
     return(str_glue_data(parsed_params, gsub('@.*?}', '}', query)))
 }
 
-#    config_file = 'get_data_queries.yml'
-#    yr = 2020
-#    config = read_yaml(config_file)
-#    # get the query for CO2 emissions for year yr
-#    query_str = get_query('emissions', 'co2_emissions')
-#    print('Raw query:')
-#    print(query_str)
-#
-#    # replaces all tqgs
-#    print('Set all args')
-#    print(apply_query_params(query_str, list( 'region'= c('=', 'USA'), 'year'= c('=', yr) ), TRUE ))
-#    # omits region so should 'collapse' it
-#    print('Omit region')
-#    print(apply_query_params(query_str, list( 'year'= c('=', yr) ), TRUE))
-#    print('Omit region, set data')
-#    print(apply_query_params(query_str, list( 'year'= c('=', yr) ), FALSE ))
-#    # tries to set some unknown tag so should get warning
-#    print('Set unknown instead of year:')
-#    print(apply_query_params(query_str, list( 'region'= c('=~', 'USA'), 'asdf'= c('=', yr) ), FALSE ) )
-#

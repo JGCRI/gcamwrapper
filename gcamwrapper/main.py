@@ -3,13 +3,13 @@ from pandas import DataFrame, Series
 from gcamwrapper.query_library import apply_query_params
 
 
-class Gcam (gcam_module.gcam):
+class Gcam(gcam_module.gcam):
     """A wrapper around GCAM to interactively run a scenario and use
        GCAMFusion capabilities to get/set arbitrary data from a running
        instance.
     """
 
-    def run_to_period(self, period = None):
+    def run_to_period(self, period=None):
         """ Run GCAM up to and including some model period.
             Model periods which have already been run will be kept track
             of and will not be run again.  HOWEVER, we do not attempt to
@@ -26,7 +26,7 @@ class Gcam (gcam_module.gcam):
             period = self.get_current_period() + 1
         super(Gcam, self).run_to_period(period)
 
-    def get_data(self, query, query_params = None):
+    def get_data(self, query, query_params=None):
         """Queries for arbitrary data from a running instance of GCAM.
 
         :param query:   GCAM fusion query
@@ -54,7 +54,7 @@ class Gcam (gcam_module.gcam):
             data_df.meta = {'units': units}
         return data_df
 
-    def set_data(self, data_df, query, query_params = None):
+    def set_data(self, data_df, query, query_params=None):
         """Changes arbitrary data in a running instance of GCAM.
 
         :param data_df:     DataFrame of data to set
@@ -118,7 +118,7 @@ class Gcam (gcam_module.gcam):
         else:
             return list(map(lambda x: self.convert_year_to_period(x), year))
 
-    def create_solution_debugger(self, period = None):
+    def create_solution_debugger(self, period=None):
         """Create a solution debugging object which can be used a single
            evaluation of the model and see how it affects prices, supplies,
            and demands amongst other things..

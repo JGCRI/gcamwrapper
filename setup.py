@@ -1,4 +1,6 @@
-import os, platform, shutil
+import os
+import platform
+import shutil
 
 from setuptools import setup, find_packages, Extension
 
@@ -77,6 +79,7 @@ try:
         author_email='pralit.patel@pnnl.gov, chris.vernon@pnnl.gov',
         description='Python API for GCAM',
         long_description=readme(),
+        long_description_content_type='text/markdown',
         python_requires='>=3.6.*, <4'
     )
 finally:
