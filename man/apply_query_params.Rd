@@ -7,12 +7,12 @@
 apply_query_params(query, query_params, is_get_data)
 }
 \arguments{
+\item{query}{The raw query which needs to have it's placeholders translated.}
+
 \item{query_params}{The user options provided as a list of arg_tags to and array of
 operators and potentially operands which will get translated to GCAM Fusion syntax.}
 
 \item{is_get_data}{A boolean if true follows get data symantics and set data if false.}
-
-\item{The}{raw query which needs to have it's placeholders translated.}
 }
 \value{
 A translated query into GCAM Fusion syntax that is ready to run.

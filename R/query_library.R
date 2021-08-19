@@ -1,14 +1,40 @@
 
+# we wrap the get_query function so as to hide the instance of the
+# PACKAGE_QUERIES which will get loaded from file the first time it
+# is needed and not again
+wrap_get_query <- function() {
+  PACKAGE_QUERIES <- NULL
+  function(..., query_file = NULL) {
+    if(is.null(query_file)) {
+      if(is.null(PACKAGE_QUERIES)) {
+        PACKAGE_QUERIES <<- read_yaml(system.file('extdata', 'query_library.yml', package="gcamwrapper"))
+      }
+      queries = PACKAGE_QUERIES
+    } else {
+      queries = read_yaml(query_file)
+    }
+    query_path <- list(...)
+    query <- queries
+    for(path in query_path) {
+      query <- query[[path]]
+      if(is.null(query)) {
+        stop(paste0("Could not find query: ", query_path))
+      }
+    }
+    if(length(query) == 0) {
+      stop(paste0("Could not find query: ", query_path))
+    }
+    query_str = query[1]
+    if(length(query) > 1) {
+      attr(query_str, "units") <- query[2]
+    }
+    if(length(query) > 2) {
+      warning(paste0("Additional elements for ", query_path, " are ignored, expecting only <query> <units>"))
+    }
 
-#' Load the package queries from YAML
-#' @importFrom yaml read_yaml
-parse_package_queries <- function() {
-    package_queries = read_yaml(system.file('extdata', 'query_library.yml', package="gcamwrapper"))
-
-    package_queries
+    return(query_str)
+  }
 }
-#' The parsed query file included with the package
-PACKAGE_QUERIES <- parse_package_queries()
 
 #' Look up a query from a YAML file.
 #'
@@ -20,33 +46,9 @@ PACKAGE_QUERIES <- parse_package_queries()
 #' @param ... (string) Strings specifiying the path to the query to lookup.
 #' @return (string) The raw query from the query file with units set as an attribute
 #' if specified.
-get_query <- function(..., query_file = NULL) {
-    if(is.null(query_file)) {
-        queries = PACKAGE_QUERIES
-    } else {
-        queries = read_yaml(query_file)
-    }
-    query_path <- list(...)
-    query <- queries
-    for(path in query_path) {
-        query <- query[[path]]
-        if(is.null(query)) {
-            stop(paste0("Could not find query: ", query_path))
-        }
-    }
-    if(length(query) == 0) {
-        stop(paste0("Could not find query: ", query_path))
-    }
-    query_str = query[1]
-    if(length(query) > 1) {
-        attr(query_str, "units") <- query[2]
-    }
-    if(length(query) > 2) {
-        warning(paste0("Additional elements for ", query_path, " are ignored, expecting only <query> <units>"))
-    }
+#' @importFrom yaml read_yaml
+get_query <- wrap_get_query()
 
-    return(query_str)
-}
 
 # TODO: move to some external documentation
 # Design doc:

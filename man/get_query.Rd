@@ -7,13 +7,13 @@
 get_query(..., query_file = NULL)
 }
 \arguments{
-\item{...}{Strings specifiying the path to the query to lookup.}
+\item{...}{(string) Strings specifiying the path to the query to lookup.}
 
-\item{query_file}{The path to a YAML file to read if not NULL otherwise
+\item{query_file}{(string) The path to a YAML file to read if not NULL otherwise
 the package query file will be used.}
 }
 \value{
-The raw query from the query file with units set as an attribute
+(string) The raw query from the query file with units set as an attribute
 if specified.
 }
 \description{

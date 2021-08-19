@@ -7,8 +7,10 @@
 parse_int_query_param(param_operands, is_get_data)
 }
 \arguments{
-\item{An}{array containing operators and potentially an operand to be used with that
+\item{param_operands}{An array containing operators and potentially an operand to be used with that
 operator.}
+
+\item{is_get_data}{A boolean if true follows get data symantics and set data if false.}
 }
 \value{
 A GCAM Fusion filter string representing the parameters given.
