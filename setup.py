@@ -1,4 +1,6 @@
-import os, platform
+import os
+import platform
+import shutil
 
 from setuptools import setup, find_packages, Extension
 
@@ -40,7 +42,11 @@ else :
 
 gcam_module = Extension(
     'gcam_module',
-    sources = ['src/gcam.cpp', 'src/solution_debugger.cpp', 'src/set_data_helper.cpp', 'src/get_data_helper.cpp'],
+    sources = ['src/gcam.cpp',
+        'src/solution_debugger.cpp',
+        'src/query_processor_base.cpp',
+        'src/set_data_helper.cpp',
+        'src/get_data_helper.cpp'],
     include_dirs=['inst/include', GCAM_INCLUDE, BOOST_INCLUDE, XERCES_INCLUDE, JAVA_INCLUDE],
     library_dirs=[GCAM_LIB, BOOST_LIB, XERCES_LIB, JAVA_LIB],
     libraries=gcam_libs,
@@ -56,18 +62,26 @@ gcam_module = Extension(
     )
 
 
-setup(
-    name='gcamwrapper',
-    version='0.1.0',
-    packages=find_packages(),
-    ext_modules=[gcam_module],
-    install_requires=get_requirements(),
-    url='https://github.com/JGCRI/gcamwrapper',
-    license='ECL 2',
-    author='Pralit Patel, Chris R. Vernon',
-    author_email='pralit.patel@pnnl.gov, chris.vernon@pnnl.gov',
-    description='Python API for GCAM',
-    long_description=readme(),
-    python_requires='>=3.6.*, <4'
-)
- 
+try:
+    # workaround to deal with R and Python being PITA about package data
+    shutil.copy(os.path.join('inst', 'extdata', 'query_library.yml'), 'gcamwrapper')
+    setup(
+        name='gcamwrapper',
+        version='0.1.0',
+        packages=find_packages(),
+        ext_modules=[gcam_module],
+        install_requires=get_requirements(),
+        #include_package_data=True,
+        package_data={'gcamwrapper': ['query_library.yml']},
+        url='https://github.com/JGCRI/gcamwrapper',
+        license='ECL 2',
+        author='Pralit Patel, Chris R. Vernon',
+        author_email='pralit.patel@pnnl.gov, chris.vernon@pnnl.gov',
+        description='Python API for GCAM',
+        long_description=readme(),
+        long_description_content_type='text/markdown',
+        python_requires='>=3.6.*, <4'
+    )
+finally:
+    os.unlink(os.path.join('gcamwrapper', 'query_library.yml'))
+     

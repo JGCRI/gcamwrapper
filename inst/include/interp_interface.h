@@ -36,6 +36,10 @@ namespace Interp {
     using Rcpp::IntegerVector;
     using Rcpp::NumericMatrix;
 
+    inline std::string extract(const Rcpp::String& aStr) {
+        return aStr;
+    }
+
     inline DataFrame createDataFrame() {
       return DataFrame::create();
     }
@@ -89,6 +93,11 @@ namespace Interp {
     }
     namespace bp = boost::python;
     namespace bnp = boost::python::numpy;
+
+    inline std::string extract(const bp::str& aStr) {
+        return bp::extract<std::string>(aStr);
+    }
+
     template<typename T>
     struct NumpyVecWrapper {
         bnp::ndarray mNPArr;

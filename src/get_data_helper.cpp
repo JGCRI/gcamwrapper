@@ -8,34 +8,34 @@
 using namespace std;
 using namespace Interp;
 
-class MatchesAny : public AMatchesValue {
-public:
-    virtual bool matchesString( const std::string& aStrToTest ) const {
-        return true;
-    }
-    virtual bool matchesInt( const int aIntToTest ) const {
-        return true;
-    }
-};
-
+/*!
+ * \brief A wrapper around an AMatchesValue so that we can record to a DataFrame
+ *        the current values that may be matched by AMatchesValue.
+ */
 class AMatcherWrapper : public AMatchesValue {
 public:
-    AMatcherWrapper(AMatchesValue* aToWrap):mToWrap(aToWrap)
+    AMatcherWrapper(AMatchesValue* aToWrap, const std::string& aDataName):mToWrap(aToWrap), mDataName(aDataName)
     {
     }
     virtual ~AMatcherWrapper() {
         delete mToWrap;
     }
-    virtual void recordPath() = 0;
-    virtual void updateDataFrame(DataFrame& aDataFrame, const string& aCol) const = 0;
+    const std::string getDataName() const {
+        return mDataName;
+    }
+    virtual void recordPath() {};
+    virtual void updateDataFrame(DataFrame& aDataFrame) const {};
 
 protected:
+    //! The actual AMatchesValue which determines if the current path matches the query
     AMatchesValue* mToWrap;
+    //! The data name which is useful to keep track of as a mapping back to DataFrame columns
+    const std::string mDataName;
 };
 
 class StrMatcherWrapper : public AMatcherWrapper {
 public:
-  StrMatcherWrapper(AMatchesValue* aToWrap):AMatcherWrapper(aToWrap)
+  StrMatcherWrapper(AMatchesValue* aToWrap, const std::string& aDataName):AMatcherWrapper(aToWrap, aDataName)
   {
   }
     virtual bool matchesString( const std::string& aStrToTest ) const {
@@ -48,17 +48,22 @@ public:
     virtual void recordPath() {
         mData.push_back(mCurrValue);
     }
-    virtual void updateDataFrame(DataFrame& aDataFrame, const string& aCol) const {
-        aDataFrame[aCol] = Interp::wrap(mData);
+    virtual void updateDataFrame(DataFrame& aDataFrame) const {
+        aDataFrame[mDataName] = Interp::wrap(mData);
     }
     private:
+    //! A temporary holding the last matched value which may get copied
+    //! into mData if recordPath is called
     string mCurrValue;
+    //! The list of values that matched when a query successfully found data
+    //! which can be transformed into a column of a DataFrame
+    //TODO: probably better as a std::list
     vector<string> mData;
 };
 
 class IntMatcherWrapper : public AMatcherWrapper {
 public:
-  IntMatcherWrapper(AMatchesValue* aToWrap):AMatcherWrapper(aToWrap)
+  IntMatcherWrapper(AMatchesValue* aToWrap, const std::string& aDataName):AMatcherWrapper(aToWrap, aDataName)
   {
   }
     virtual bool matchesInt( const int aIntToTest ) const {
@@ -71,38 +76,85 @@ public:
     virtual void recordPath() {
         mData.push_back(mCurrValue);
     }
-    virtual void updateDataFrame(DataFrame& aDataFrame, const string& aCol) const {
-        aDataFrame[aCol] = Interp::wrap(mData);
+    virtual void updateDataFrame(DataFrame& aDataFrame) const {
+        aDataFrame[mDataName] = Interp::wrap(mData);
     }
     private:
+    //! A temporary holding the last matched value which may get copied
+    //! into mData if recordPath is called
     int mCurrValue;
+    //! The list of values that matched when a query successfully found data
+    //! which can be transformed into a column of a DataFrame
+    //TODO: probably better as a std::list
     vector<int> mData;
 };
 
+/*!
+ * \brief Prepare to run the given query.
+ * \param aQuery The GCAM Fusion query to be parsed
+ */
+GetDataHelper::GetDataHelper(const std::string& aQuery):QueryProcessorBase() {
+    // parse the query into filter steps
+    parseFilterString(aQuery);
+
+    // determine if a user already filtered a period vector of data
+    // if not, and we are in fact querying a vector of data, we will
+    // add it for them
+    mHasYearInPath = false;
+    for(auto tracker : mPathTracker) {
+        if(tracker->getDataName() == "year") {
+            mHasYearInPath = true;
+        }
+    }
+}
+
+/*!
+ * \brief Run the query against the given Scenario context and
+ *        return the results as a DataFrame.
+ * \param aScenario The Scenario object which will serve as the
+ *                  query context from which to evaluate the query.
+ * \return A DataFrame where the columns include all the name/year
+ *         of the GCAM CONTAINER the user indicated they wanted to
+ *         record and the last column holds the values that results
+ *         from the query.
+ */
 DataFrame GetDataHelper::run(Scenario* aScenario) {
+  // run the query, the specialized filters will keep track
+  // of matching data to use as columns as it processes
   GCAMFusion<GetDataHelper> fusion(*this, mFilterSteps);
   fusion.startFilter(aScenario);
+
+  // extract the data from the path tracking filters and
+  // organize them as columns in a DataFrame
   DataFrame ret = Interp::createDataFrame();
   size_t i = 0;
   for(i = 0; i < mPathTracker.size(); ++i) {
-      mPathTracker[i]->updateDataFrame(ret, mColNames[i]);
+      mPathTracker[i]->updateDataFrame(ret);
   }
-  ret[mColNames[i++]] = Interp::wrap(mDataVector);
-  if(!mYearVector.empty()) {
-      ret[mColNames[i]] = Interp::wrap(mYearVector);
-  }
+  // the actual values will be the final column
+  ret[mDataColName] = Interp::wrap(mDataVector);
   return ret;
 }
 
-GetDataHelper::~GetDataHelper() {
-    // note mPathTracker's memory is managed by mFilterSteps
-  for(auto step : mFilterSteps) {
-    delete step;
-  }
+AMatchesValue* GetDataHelper::wrapPredicate(AMatchesValue* aToWrap, const std::string& aDataName, const bool aIsInt) {
+    // if the user intended to record the value at this filter then we just
+    // wrap whatever filter they set with the path tracking filter
+    AMatcherWrapper* ret = aIsInt ?
+        static_cast<AMatcherWrapper*>(new IntMatcherWrapper(aToWrap, aDataName )) :
+        static_cast<AMatcherWrapper*>(new StrMatcherWrapper( aToWrap, aDataName ));
+    // and add it to the list so we can trigger them to record values when a query
+    // successfully matches data
+    mPathTracker.push_back(ret);
+    return ret;
 }
+
+// GCAM Fusion callbacks with specializations for all of the types that
+// we support:
 
 template<>
 void GetDataHelper::processData(double& aData) {
+    // add the value which matched and have the tracking filters
+    // record their current values to include in this row
     mDataVector.push_back(aData);
     for(auto path: mPathTracker) {
         path->recordPath();
@@ -110,6 +162,8 @@ void GetDataHelper::processData(double& aData) {
 }
 template<>
 void GetDataHelper::processData(Value& aData) {
+    // add the value which matched and have the tracking filters
+    // record their current values to include in this row
     mDataVector.push_back(aData);
     for(auto path: mPathTracker) {
         path->recordPath();
@@ -117,6 +171,8 @@ void GetDataHelper::processData(Value& aData) {
 }
 template<>
 void GetDataHelper::processData(int& aData) {
+    // add the value which matched and have the tracking filters
+    // record their current values to include in this row
     mDataVector.push_back(aData);
     for(auto path: mPathTracker) {
         path->recordPath();
@@ -164,23 +220,41 @@ void GetDataHelper::processData(objects::YearVector<double>& aData) {
 }
 template<>
 void GetDataHelper::processData(std::map<unsigned int, double>& aData) {
-  if(mYearVector.empty()) {
-    mColNames.push_back("year");
+  // the user did not explicitly specify a year filter for this data but
+  // it seems better to assume they did rather than implicitly aggregate
+  // accross model periods
+  // so let's add the path tracking filter to record all years the first
+  // time we see this for them
+  if(!mHasYearInPath) {
+      mPathTracker.push_back(new IntMatcherWrapper(createMatchesAny(), "year"));
+      mHasYearInPath = true;
   }
   for(auto iter = aData.begin(); iter != aData.end(); ++iter) {
-    mYearVector.push_back(GetIndexAsYear::convertIterToYear(aData, iter));
+    // update the year path tracker which would not have had to match thus far
+    // as an ARRAY is not a CONTAINER
+    (*mPathTracker.rbegin())->matchesInt(GetIndexAsYear::convertIterToYear(aData, iter));
+    // deletegate to processData to take care of the rest
     processData((*iter).second);
   }
 }
 template<typename VecType>
 void GetDataHelper::vectorDataHelper(VecType& aDataVec) {
-    if(mYearVector.empty()) {
-        mColNames.push_back("year");
-    }
-    for(auto iter = aDataVec.begin(); iter != aDataVec.end(); ++iter) {
-        mYearVector.push_back(GetIndexAsYear::convertIterToYear(aDataVec, iter));
-        processData(*iter);
-    }
+  // the user did not explicitly specify a year filter for this data but
+  // it seems better to assume they did rather than implicitly aggregate
+  // accross model periods
+  // so let's add the path tracking filter to record all years the first
+  // time we see this for them
+  if(!mHasYearInPath) {
+      mPathTracker.push_back(new IntMatcherWrapper(createMatchesAny(), "year"));
+      mHasYearInPath = true;
+  }
+  for(auto iter = aDataVec.begin(); iter != aDataVec.end(); ++iter) {
+    // update the year path tracker which would not have had to match thus far
+    // as an ARRAY is not a CONTAINER
+    (*mPathTracker.rbegin())->matchesInt(GetIndexAsYear::convertIterToYear(aDataVec, iter));
+    // deletegate to processData to take care of the rest
+    processData(*iter);
+  }
 }
 
 template<typename T>
@@ -188,111 +262,3 @@ void GetDataHelper::processData(T& aData) {
   Interp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
 }
 
-FilterStep* GetDataHelper::parseFilterStepStr( const std::string& aFilterStepStr, int& aCol ) {
-  auto openBracketIter = std::find( aFilterStepStr.begin(), aFilterStepStr.end(), '[' );
-  if( openBracketIter == aFilterStepStr.end() ) {
-    // no filter just the data name
-    return new FilterStep( aFilterStepStr );
-  }
-  else {
-    std::string dataName( aFilterStepStr.begin(), openBracketIter );
-    bool isRead = *(openBracketIter + 1) == '+';
-    int filterOffset = isRead ? 2 : 1;
-    std::string filterStr( openBracketIter + filterOffset, std::find( openBracketIter, aFilterStepStr.end(), ']' ) );
-    std::vector<std::string> filterOptions;
-    boost::split( filterOptions, filterStr, boost::is_any_of( "," ) );
-    // [0] = filter type (name, year, index)
-    // [1] = match type
-    // [2:] = match type options
-    AMatchesValue* matcher = 0;
-        if( filterOptions[ 1 ] == "StringEquals" ) {
-            matcher = new StringEquals( filterOptions[ 2 ] );
-        }
-        else if( filterOptions[ 1 ] == "StringRegexMatches" ) {
-            matcher = new StringRegexMatches( filterOptions[ 2 ] );
-        }
-        else if( filterOptions[ 1 ] == "IntEquals" ) {
-            matcher = new IntEquals( boost::lexical_cast<int>( filterOptions[ 2 ] ) );
-        }
-        else if( filterOptions[ 1 ] == "IntGreaterThan" ) {
-            matcher = new IntGreaterThan( boost::lexical_cast<int>( filterOptions[ 2 ] ) );
-        }
-        else if( filterOptions[ 1 ] == "IntGreaterThanEq" ) {
-            matcher = new IntGreaterThanEq( boost::lexical_cast<int>( filterOptions[ 2 ] ) );
-        }
-        else if( filterOptions[ 1 ] == "IntLessThan" ) {
-            matcher = new IntLessThan( boost::lexical_cast<int>( filterOptions[ 2 ] ) );
-        }
-        else if( filterOptions[ 1 ] == "IntLessThanEq" ) {
-            matcher = new IntLessThanEq( boost::lexical_cast<int>( filterOptions[ 2 ] ) );
-        }
-        else if( filterOptions[ 1 ] == "MatchesAny" ) {
-            matcher = new MatchesAny();
-        }
-    else {
-      ILogger& mainLog = ILogger::getLogger( "main_log" );
-      mainLog.setLevel( ILogger::WARNING );
-      mainLog << "Unknown subclass of AMatchesValue: " << filterStr << std::endl;
-    }
-
-    FilterStep* filterStep = 0;
-        if( filterOptions[ 0 ] == "IndexFilter" ) {
-            if(isRead) {
-                AMatcherWrapper* wrap = new IntMatcherWrapper(matcher);
-                mPathTracker.push_back(wrap);
-                mColNames.push_back("index");
-                matcher = wrap;
-            }
-
-            filterStep = new FilterStep( dataName, new IndexFilter( matcher ) );
-        }
-        else if( filterOptions[ 0 ] == "NamedFilter" ) {
-            if(isRead) {
-                AMatcherWrapper* wrap = new StrMatcherWrapper(matcher);
-                mColNames.push_back(dataName);
-                mPathTracker.push_back(wrap);
-                matcher = wrap;
-            }
-
-            filterStep = new FilterStep( dataName, new NamedFilter( matcher ) );
-        }
-        else if( filterOptions[ 0 ] == "YearFilter" ) {
-            if(isRead) {
-                AMatcherWrapper* wrap = new IntMatcherWrapper(matcher);
-                mColNames.push_back("year");
-                mPathTracker.push_back(wrap);
-                matcher = wrap;
-            }
-
-            filterStep = new FilterStep( dataName, new YearFilter( matcher ) );
-        }
-        else {
-            ILogger& mainLog = ILogger::getLogger( "main_log" );
-            mainLog.setLevel( ILogger::WARNING );
-            mainLog << "Unknown filter: " << filterOptions[ 0 ] << std::endl;
-        }
-
-
-    return filterStep;
-  }
-}
-
-/*!
- * \brief Parse a string to create a list of FilterSteps.
- * \details The string is split on the '/' character so that the contents of each is
- *          assumed to be one FilterStep definition.  Each split string is therefore
- *          parsed further using the helper function parseFilterStepStr.
- * \param aFilterStr A string representing a series of FilterSteps.
- * \return A list of FilterSteps parsed from aFilterStr as detailed above.
- */
-void GetDataHelper::parseFilterString(const std::string& aFilterStr ) {
-  std::vector<std::string> filterStepsStr;
-  boost::split( filterStepsStr, aFilterStr, boost::is_any_of( "/" ) );
-  std::vector<FilterStep*> filterSteps( filterStepsStr.size() );
-  mFilterSteps.resize(filterStepsStr.size());
-  int col = 0;
-  for( size_t i = 0; i < filterStepsStr.size(); ++i ) {
-    mFilterSteps[ i ] = parseFilterStepStr( filterStepsStr[ i ], col );
-  }
-  mColNames.push_back(mFilterSteps.back()->mDataName);
-}
