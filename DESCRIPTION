@@ -12,5 +12,5 @@ URL: https://github.com/JGCRI/gcamwrapper
 Encoding: UTF-8
 LazyData: true
 LinkingTo: Rcpp
-Imports: Rcpp
+Imports: Rcpp, dplyr, yaml, stringr
 RoxygenNote: 6.1.1

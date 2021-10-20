@@ -8,30 +8,91 @@
 using namespace std;
 using namespace Interp;
 
+// Implementations of all the standard GCAM Fusion predicates however with the
+// value to be compared against comping from a vector instead of specified explicitly
+
 class StringVecEquals : public AMatchesValue {
 public:
-  StringVecEquals( const Interp::StringVector& aStr, int& row ):mStr( aStr ), mRow( row ) {}
+  StringVecEquals( const Interp::StringVector& aStr, const int& aRow ):mStr( aStr ), mRow( aRow ) {}
   virtual ~StringVecEquals() {}
   virtual bool matchesString( const std::string& aStrToTest ) const {
     return mStr[mRow] == aStrToTest;
   }
-private:
+protected:
   const Interp::StringVector mStr;
-  int& mRow;
+  const int& mRow;
+};
+class StringVecRegexMatches : public StringVecEquals {
+public:
+  StringVecRegexMatches( const Interp::StringVector& aStr, const int& aRow ):StringVecEquals( aStr, aRow ) {}
+  virtual bool matchesString( const std::string& aStrToTest ) const {
+      // TODO: performance is likely terrible, might want to convert mStr to regex ahead of time
+      std::regex matcher( Interp::extract(mStr[mRow]), std::regex::nosubs | std::regex::optimize | std::regex::egrep );
+      return std::regex_search( aStrToTest, matcher );
+  }
 };
 
 class IntVecEquals : public AMatchesValue {
 public:
-  IntVecEquals( const Interp::IntegerVector& aInt, int& row ):mInt( aInt ), mRow( row ) {}
+  IntVecEquals( const Interp::IntegerVector& aInt, const int& aRow ):mInt( aInt ), mRow( aRow ) {}
   virtual ~IntVecEquals() {}
   virtual bool matchesInt( const int aIntToTest ) const {
     return mInt[mRow] == aIntToTest;
   }
-private:
+protected:
   const Interp::IntegerVector mInt;
-  int& mRow;
+  const int& mRow;
+};
+class IntVecGreaterThan: public IntVecEquals {
+public:
+  IntVecGreaterThan( const Interp::IntegerVector& aInt, const int& aRow ):IntVecEquals( aInt, aRow ) {}
+  virtual bool matchesInt( const int aIntToTest ) const {
+      return aIntToTest > mInt[mRow];
+  }
+};
+class IntVecGreaterThanEq: public IntVecEquals {
+public:
+  IntVecGreaterThanEq( const Interp::IntegerVector& aInt, const int& aRow ):IntVecEquals( aInt, aRow ) {}
+  virtual bool matchesInt( const int aIntToTest ) const {
+      return aIntToTest >= mInt[mRow];
+  }
+};
+class IntVecLessThan: public IntVecEquals {
+public:
+  IntVecLessThan( const Interp::IntegerVector& aInt, const int& aRow ):IntVecEquals( aInt, aRow ) {}
+  virtual bool matchesInt( const int aIntToTest ) const {
+      return aIntToTest < mInt[mRow];
+  }
+};
+class IntVecLessThanEq: public IntVecEquals {
+public:
+  IntVecLessThanEq( const Interp::IntegerVector& aInt, const int& aRow ):IntVecEquals( aInt, aRow ) {}
+  virtual bool matchesInt( const int aIntToTest ) const {
+      return aIntToTest <= mInt[mRow];
+  }
 };
 
+/*!
+ * \brief Prepare to run the given query.
+ * \param aData The DataFrame to read name/year values to compare against,
+ *              as well as the values to set.
+ * \param aQuery The GCAM Fusion query to be parsed
+ */
+SetDataHelper::SetDataHelper(const Interp::DataFrame& aData, const std::string& aHeader):
+    QueryProcessorBase(),
+    mData(aData),
+    mDataVector(Interp::getDataFrameAt<Interp::NumericVector>(aData, -1)),
+    mRow(0)
+{
+    parseFilterString(aHeader);
+}
+
+/*!
+ * \brief Run the query against the given Scenario context and
+ *        set the data processing the DataFrame row by row.
+ * \param aScenario The Scenario object which will serve as the
+ *                  query context from which to evaluate the query.
+ */
 void SetDataHelper::run(Scenario* aScenario) {
   GCAMFusion<SetDataHelper> fusion(*this, mFilterSteps);
   for(mRow = 0; mRow < getDataFrameNumRows(mData); ++mRow) {
@@ -39,11 +100,63 @@ void SetDataHelper::run(Scenario* aScenario) {
   }
 }
 
-SetDataHelper::~SetDataHelper() {
-  for(auto step : mFilterSteps) {
-    delete step;
-  }
+/*!
+ * \brief Parse individual components of a filter.
+ * \details If aIsRead is set we return a "vectorized" implementation of the
+ *          requested predicate and the value to be compared against will come
+ *          from the columns of mData.  If not the base class implementation is
+ *          called instead.
+ * \param aFilterOptions The parsed components of a filter where the first value
+ *                       sets the type (name, year, index), the second is the
+ *                       predicate (equals, greater than, etc), and any other
+ *                       values are additional arguments to the predicate.
+ * \param aCol The current column number which should correspond to a DataFrame
+ *             which is useful should this be a Set Data operation.
+ * \param aIsRead If the `+` option was specified in which case the specialized
+ *                Get / Set Data behavior will be enabled.
+ * \return The corresponding AMatchesValue instance for the options given.
+ */
+AMatchesValue* SetDataHelper::parsePredicate( const std::vector<std::string>& aFilterOptions, const int aCol, const bool aIsRead ) const {
+    // [0] = filter type (name, year, index)
+    // [1] = match type
+    // [2:] = match type options (ignored if aIsRead)
+    AMatchesValue* matcher = 0;
+    if(!aIsRead) {
+        matcher = QueryProcessorBase::parsePredicate(aFilterOptions, aCol, aIsRead);
+    }
+    else if( aFilterOptions[ 1 ] == "StringEquals" ) {
+        matcher = new StringVecEquals(getDataFrameAt<StringVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "StringRegexMatches" ) {
+        matcher = new StringVecRegexMatches(getDataFrameAt<StringVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "IntEquals" ) {
+        matcher = new IntVecEquals(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "IntGreaterThan" ) {
+        matcher = new IntVecGreaterThan(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "IntGreaterThanEq" ) {
+        matcher = new IntVecGreaterThanEq(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "IntLessThan" ) {
+        matcher = new IntVecLessThan(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "IntLessThanEq" ) {
+        matcher = new IntVecLessThanEq(getDataFrameAt<IntegerVector>(mData, aCol), mRow);
+    }
+    else if( aFilterOptions[ 1 ] == "MatchesAny" ) {
+        matcher = createMatchesAny();
+    }
+    else {
+        Interp::stop("Unknown filter operand: " + aFilterOptions[ 1 ]);
+    }
+
+    return matcher;
 }
+
+// GCAM Fusion callbacks to set the data with specializations for all of the
+// types that we support:
 
 template<>
 void SetDataHelper::processData(double& aData) {
@@ -64,59 +177,5 @@ void SetDataHelper::processData(std::pair<unsigned int const, double>& aData) {
 template<typename T>
 void SetDataHelper::processData(T& aData) {
   Interp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
-}
-
-FilterStep* SetDataHelper::parseFilterStepStr( const std::string& aFilterStepStr, int& aCol ) {
-  auto openBracketIter = std::find( aFilterStepStr.begin(), aFilterStepStr.end(), '[' );
-  if( openBracketIter == aFilterStepStr.end() ) {
-    // no filter just the data name
-    return new FilterStep( aFilterStepStr );
-  }
-  else {
-    std::string dataName( aFilterStepStr.begin(), openBracketIter );
-    bool isRead = *(openBracketIter + 1) == '+';
-    int filterOffset = isRead ? 2 : 1;
-    std::string filterStr( openBracketIter + filterOffset, std::find( openBracketIter, aFilterStepStr.end(), ']' ) );
-
-    AMatchesValue* matcher = 0;
-    FilterStep* filterStep = 0;
-    if( filterStr == "name" ) {
-      matcher = new StringVecEquals( getDataFrameAt<StringVector>(mData, aCol), mRow );
-      filterStep = new FilterStep( dataName, new NamedFilter( matcher ) );
-    }
-    else if( filterStr == "year" ) {
-      matcher = new IntVecEquals( getDataFrameAt<IntegerVector>(mData, aCol), mRow );
-      filterStep = new FilterStep( dataName, new YearFilter( matcher ) );
-    }
-    else {
-      ILogger& mainLog = ILogger::getLogger( "main_log" );
-      mainLog.setLevel( ILogger::WARNING );
-      mainLog << "Unknown subclass of AMatchesValue: " << filterStr << std::endl;
-    }
-
-    if(isRead) {
-      ++aCol;
-    }
-    return filterStep;
-  }
-}
-
-/*!
- * \brief Parse a string to create a list of FilterSteps.
- * \details The string is split on the '/' character so that the contents of each is
- *          assumed to be one FilterStep definition.  Each split string is therefore
- *          parsed further using the helper function parseFilterStepStr.
- * \param aFilterStr A string representing a series of FilterSteps.
- * \return A list of FilterSteps parsed from aFilterStr as detailed above.
- */
-std::vector<FilterStep*> SetDataHelper::parseFilterString(const std::string& aFilterStr ) {
-  std::vector<std::string> filterStepsStr;
-  boost::split( filterStepsStr, aFilterStr, boost::is_any_of( "/" ) );
-  std::vector<FilterStep*> filterSteps( filterStepsStr.size() );
-  int col = 0;
-  for( size_t i = 0; i < filterStepsStr.size(); ++i ) {
-    filterSteps[ i ] = parseFilterStepStr( filterStepsStr[ i ], col );
-  }
-  return filterSteps;
 }
 

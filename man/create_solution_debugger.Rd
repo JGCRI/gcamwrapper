@@ -4,12 +4,13 @@
 \alias{create_solution_debugger}
 \title{Create a solution debugging object}
 \usage{
-create_solution_debugger(gcam, period)
+create_solution_debugger(gcam, period = NULL)
 }
 \arguments{
 \item{gcam}{(gcam) An initialized GCAM instance}
 
-\item{period}{(integer) GCAM model period to create the debugger}
+\item{period}{(integer) GCAM model period to create the debugger or if NULL
+use the last run model period.}
 }
 \value{
 A SolutionDebugger object

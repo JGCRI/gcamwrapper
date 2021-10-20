@@ -4,12 +4,15 @@
 \alias{get_data}
 \title{Get some arbitrary data out of GCAM}
 \usage{
-get_data(gcam, path)
+get_data(gcam, query, query_params = NULL)
 }
 \arguments{
 \item{gcam}{(gcam) An initialized GCAM instance}
 
-\item{path}{(string) A GCAM fusion-ish search path to determine where to get the data.}
+\item{query}{(string) A GCAM fusion-ish search path to determine where to get the data.}
+
+\item{query_params}{(list[string] -> array(string)) User options to translate placeholder
+expressions in query should it have any.}
 }
 \value{
 A tibble containing the requested data
