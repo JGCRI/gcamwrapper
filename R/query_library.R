@@ -98,28 +98,44 @@ find_placeholders <- function(query_str) {
 #' Parse user options for integer operators and generate GCAM Fusion syntax
 #'
 #' The currently supported operators are:
-#' `+`: Indicates to read/write to a DataFrame.  Note if `is_get_data` this is always
-#' implied to be set.
-#' `*`: which always matches and so no additional operands are necessary (note if
-#' param_operands is empty this operator is assumed)
+#' `+`, `-`: Indicates to read/write to a DataFrame if `+` or not to read/write if `-`
+#' `*`: which always matches and so no additional operands are necessary
 #' The standard comparison operators: `=`, `<`, `<=`, `>`, `>=`. Note if `is_get_data` is true
-#' or the `+` is not set an additional argument must be supplied which is the integer (or a
+#' or the `-` is set an additional argument must be supplied which is the integer (or a
 #' string that can be converted to integer) to be used as the RHS operand in the comparison.
+#' Finally if param_operands is NULL or empty then if `is_get_data` then c('+', '*') is assumed
+#' otherwise c('+', '=').
 #' @param param_operands An array containing operators and potentially an operand to be used with that
 #' operator.
 #' @param is_get_data A boolean if true follows get data symantics and set data if false.
 #' @return A GCAM Fusion filter string representing the parameters given.
 parse_int_query_param <- function(param_operands, is_get_data) {
     wrapper_to_fusion_lookup = list('*'= 'MatchesAny', '<'= 'IntLessThan', '<='= 'IntLessThanEq', '>'= 'IntGreaterThan', '>='= 'IntGreaterThanEq', '='= 'IntEquals')
-    if(is_get_data || '+' %in% param_operands) {
+    # the default behavior is to set the '+' operator
+    is_read = TRUE
+    if('-' %in% param_operands) {
+        ret = '['
+        is_read = FALSE
+        # remove the - (if set) for easier error checking later
+        param_operands = param_operands[param_operands != '-']
+    } else {
         ret = '[+'
         is_read = TRUE
+        # remove the + (if set) for easier error checking later
         param_operands = param_operands[param_operands != '+']
-    } else {
-        is_read = FALSE
-        ret = '['
     }
-    if(is.na(param_operands) || length(param_operands) == 0 || param_operands[1] == '*') {
+
+    # use default behavior if no param_operands were given
+    if(is.na(param_operands) || length(param_operands) == 0) {
+        # for get data the default is to match any
+        # for set data the default is to match =
+        param_operands = ifelse(is_get_data, c('*'), c('='))
+    }
+
+    if(param_operands[1] == '*') {
+        if(!is_get_data && is_read) {
+            stop(paste0('Using * without explictly not reading from columns with - is not valid in set_data: ', param_operands))
+        }
         ret = paste0(ret, 'YearFilter,', wrapper_to_fusion_lookup['*'])
     } else if(!is_get_data && is_read) {
         if(length(param_operands) < 1) {
@@ -145,28 +161,44 @@ parse_int_query_param <- function(param_operands, is_get_data) {
 #' Parse user options for string operators and generate GCAM Fusion syntax
 #'
 #' The currently supported operators are:
-#' `+`: Indicates to read/write to a DataFrame.  Note if `is_get_data` this is always
-#' implied to be set.
-#' `*`: which always matches and so no additional operands are necessary (note if
-#' param_operands is empty this operator is assumed)
+#' `+`, `-`: Indicates to read/write to a DataFrame if `+` or not to read/write if `-`
+#' `*`: which always matches and so no additional operands are necessary
 #' The operators: `=`, `=~` (regular expression matching). Note if `is_get_data` is true
-#' or the `+` is not set an additional argument must be supplied which is the string to
+#' or the `-` is set an additional argument must be supplied which is the string to
 #' be used as the RHS operand in the comparison.
+#' Finally if param_operands is NULL or empty then if `is_get_data` then c('+', '*') is assumed
+#' otherwise c('+', '=').
 #' @param param_operands An array containing operators and potentially an operand to be used with that
 #' operator.
 #' @param is_get_data A boolean if true follows get data symantics and set data if false.
 #' @return A GCAM Fusion filter string representing the parameters given.
 parse_str_query_param <- function(param_operands, is_get_data) {
     wrapper_to_fusion_lookup = list('*'= 'MatchesAny', '='= 'StringEquals','=~'= 'StringRegexMatches')
-    if(is_get_data || '+' %in% param_operands) {
+    # the default behavior is to set the '+' operator
+    is_read = TRUE
+    if('-' %in% param_operands) {
+        ret = '[NamedFilter,'
+        is_read = FALSE
+        # remove the - (if set) for easier error checking later
+        param_operands = param_operands[param_operands != '-']
+    } else {
         ret = '[+NamedFilter,'
         is_read = TRUE
+        # remove the + (if set) for easier error checking later
         param_operands = param_operands[param_operands != '+']
-    } else {
-        is_read = FALSE
-        ret = '[NamedFilter,'
     }
-    if(is.na(param_operands) || length(param_operands) == 0 || param_operands[1] == '*') {
+
+    # use default behavior if no param_operands were given
+    if(is.na(param_operands) || length(param_operands) == 0) {
+        # for get data the default is to match any
+        # for set data the default is to match =
+        param_operands = ifelse(is_get_data, c('*'), c('='))
+    }
+
+    if(param_operands[1] == '*') {
+        if(!is_get_data && is_read) {
+            stop(paste0('Using * without explictly not reading from columns with - is not valid in set_data: ', param_operands))
+        }
         ret = paste0(ret, wrapper_to_fusion_lookup['*'])
     } else if(!is_get_data && is_read) {
         if(length(param_operands) < 1) {
@@ -190,8 +222,8 @@ parse_str_query_param <- function(param_operands, is_get_data) {
 #' will be used to process the value of query_params[[arg_tag]] and if "year" then
 #' \link{parse_int_query_param} is used.
 #' Note symantics are slightly different if is_get_data is true as described in parse_.*_query_params.
-#' For any arg_tag which has no entry in query_params it will be replaced with nothing
-#' which tells GCAM Fusion to match any but do not read/write to the DataFrame for that container.
+#' For any arg_tag which has no entry in query_params it will be given the results of passing `NULL`
+#' to parse_int/str_query_param.
 #' @param query The raw query which needs to have it's placeholders translated.
 #' @param query_params The user options provided as a list of arg_tags to and array of
 #' operators and potentially operands which will get translated to GCAM Fusion syntax.
@@ -214,9 +246,13 @@ apply_query_params <- function(query, query_params, is_get_data) {
         }
     }
 
+    # double check if we have any placeholders for which the user did not explicitly
+    # provide a parameter
     for(param in names(placeholders)) {
         if(!param %in% names(query_params)) {
-            parsed_params[param] = ''
+            # if no param was provided get the default value by passing NULL to the
+            # appropriate parse_XXX_query_param
+            parsed_params[param] = ifelse(placeholders[[param]] == 'year', parse_int_query_param(NULL, is_get_data), parse_str_query_param(NULL, is_get_data))
         }
     }
 

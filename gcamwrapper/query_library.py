@@ -113,13 +113,13 @@ def find_placeholders(query_str):
 def parse_int_query_param(param_operands, is_get_data):
     '''Parse user options for integer operators and generate GCAM Fusion syntax.
        The currently supported operators are:
-       `+`: Indicates to read/write to a DataFrame.  Note if `is_get_data` this is always
-       implied to be set.
-       `*`: which always matches and so no additional operands are necessary (note if
-       param_operands is empty this operator is assumed)
+       `+`, `-`: Indicates to read/write to a DataFrame if `+` or not to read/write if `-`
+       `*`: which always matches and so no additional operands are necessary
        The standard comparison operators: `=`, `<`, `<=`, `>`, `>=`. Note if `is_get_data` is true
-       or the `+` is not set an additional argument must be supplied which is the integer (or a
+       or the `-` is set an additional argument must be supplied which is the integer (or a
        string that can be converted to integer) to be used as the RHS operand in the comparison.
+       Finally if param_operands is NULL or empty then if `is_get_data` then ['+', '*'] is assumed
+       otherwise ['+', '='].
 
     :param param_operands: An array containing operators and potentially an operand to be used with that
                            operator
@@ -131,16 +131,38 @@ def parse_int_query_param(param_operands, is_get_data):
     '''
 
     wrapper_to_fusion_lookup = {'*': 'MatchesAny', '<': 'IntLessThan', '<=': 'IntLessThanEq', '>': 'IntGreaterThan', '>=': 'IntGreaterThanEq', '=': 'IntEquals'}
+    # the default behavior is to set the '+' operator
+    plus_op = '+'
     try:
+        minus_index = param_operands.index('-')
+        # if we do not get an exception that means it was set
+        plus_op = ''
+        # try to remove the - (if set) for easier error checking later
+        param_operands.pop(minus_index)
+    except (ValueError, AttributeError):
+        pass
+
+    try:
+        # try to remove the + (if set) for easier error checking later
         plus_index = param_operands.index('+')
+        # this handles the case if both - and + are set the + takes prescedance
         plus_op = param_operands.pop(plus_index)
     except (ValueError, AttributeError):
-        if is_get_data:
-            plus_op = '+'
-        else:
-            plus_op = ''
+        pass
+
     ret = '[' + plus_op
-    if param_operands is None or len(param_operands) == 0 or param_operands[0] == '*':
+    # use default behavior if no param_operands were given
+    if param_operands is None or len(param_operands) == 0:
+        if is_get_data:
+            # for get data the default is to match any
+            param_operands = ['*']
+        else:
+            # for set data the default is to match =
+            param_operands = ['=']
+
+    if param_operands[0] == '*':
+        if not is_get_data and plus_op == '+':
+            raise QuerySyntaxException(f"Using * without explictly not reading from columns with - is not valid in set_data: {param_operands}")
         ret += 'YearFilter,' + wrapper_to_fusion_lookup['*']
     elif not is_get_data and plus_op == '+':
         if len(param_operands) < 1:
@@ -166,13 +188,13 @@ def parse_int_query_param(param_operands, is_get_data):
 def parse_str_query_param(param_operands, is_get_data):
     '''Parse user options for string operators and generate GCAM Fusion syntax
        The currently supported operators are:
-       `+`: Indicates to read/write to a DataFrame.  Note if `is_get_data` this is always
-       implied to be set.
-       `*`: which always matches and so no additional operands are necessary (note if
-       param_operands is empty this operator is assumed)
+       `+`, `-`: Indicates to read/write to a DataFrame if `+` or not to read/write if `-`
+       `*`: which always matches and so no additional operands are necessary
        The operators: `=`, `=~` (regular expression matching). Note if `is_get_data` is true
-       or the `+` is not set an additional argument must be supplied which is the string to
+       or the `-` is set an additional argument must be supplied which is the string to
        be used as the RHS operand in the comparison.
+       Finally if param_operands is NULL or empty then if `is_get_data` then ['+', '*'] is assumed
+       otherwise ['+', '='].
 
     :param param_operands: An array containing operators and potentially an operand to be used with that
                            operator
@@ -184,16 +206,38 @@ def parse_str_query_param(param_operands, is_get_data):
     '''
 
     wrapper_to_fusion_lookup = {'*': 'MatchesAny', '=': 'StringEquals','=~': 'StringRegexMatches'}
+    # the default behavior is to set the '+' operator
+    plus_op = '+'
     try:
+        minus_index = param_operands.index('-')
+        # if we do not get an exception that means it was set
+        plus_op = ''
+        # try to remove the - (if set) for easier error checking later
+        param_operands.pop(minus_index)
+    except (ValueError, AttributeError):
+        pass
+
+    try:
+        # try to remove the + (if set) for easier error checking later
         plus_index = param_operands.index('+')
+        # this handles the case if both - and + are set the + takes prescedance
         plus_op = param_operands.pop(plus_index)
-    except (ValueError, AttributeError) as e:
-        if is_get_data:
-            plus_op = '+' 
-        else:
-            plus_op = ''
+    except (ValueError, AttributeError):
+        pass
+
     ret = '[' + plus_op + 'NamedFilter,'
-    if param_operands is None or len(param_operands) == 0 or param_operands[0] == '*':
+    # use default behavior if no param_operands were given
+    if param_operands is None or len(param_operands) == 0:
+        if is_get_data:
+            # for get data the default is to match any
+            param_operands = ['*']
+        else:
+            # for set data the default is to match =
+            param_operands = ['=']
+
+    if param_operands[0] == '*':
+        if not is_get_data and plus_op == '+':
+            raise QuerySyntaxException(f"Using * without explictly not reading from columns with - is not valid in set_data: {param_operands}")
         ret += wrapper_to_fusion_lookup['*']
     elif not is_get_data and plus_op == '+':
         if len(param_operands) < 1:
@@ -215,8 +259,8 @@ def apply_query_params(query, query_params, is_get_data):
        `parse_int_query_param` is used.
        Note symantics are slightly different if is_get_data is true as described in
        parse_.*_query_params functions.
-       For any arg_tag which has no entry in query_params it will be replaced with nothing
-       which tells GCAM Fusion to match any but do not read/write to the DataFrame for that container.
+       For any arg_tag which has no entry in query_params it will be given the results of passing `None`
+       to parse_int/str_query_param.
 
     :param query: The raw query which needs to have it's placeholders translated.
     :type query: str
@@ -242,10 +286,16 @@ def apply_query_params(query, query_params, is_get_data):
             else:
                 parsed_params[param+'@'+placeholders[param]] = parse_str_query_param(args, is_get_data)
 
-    # TODO: better syntax?
+    # double check if we have any placeholders for which the user did not explicitly
+    # provide a parameter
     for param, ptype in placeholders.items():
         if not param in query_params.keys():
-            parsed_params[param+'@'+ptype] = ''
+            # if no param was provided get the default value by passing None to the
+            # appropriate parse_XXX_query_param
+            if ptype == 'year':
+                parsed_params[param+'@'+ptype] = parse_int_query_param(None, is_get_data)
+            else:
+                parsed_params[param+'@'+ptype] = parse_str_query_param(None, is_get_data)
 
     return query.format(**parsed_params)
 

@@ -26,22 +26,30 @@ class Gcam(gcam_module.gcam):
             period = self.get_current_period() + 1
         super(Gcam, self).run_to_period(period)
 
-    def get_data(self, query, query_params=None):
+    def get_data(self, query, *args, **kwargs):
         """Queries for arbitrary data from a running instance of GCAM.
 
         :param query:   GCAM fusion query
         :type query:    str
-        :param query_params: User options to translate placeholder expressions in query should
-                             it have any
-        :type query_params:  dict(string: array(string))
+        :param *args: User options to translate placeholder expressions which will
+                      will be added to the kwargs as dict(arg: None)
+        :type *args:  str
+        :param *kargs: User options to translate placeholder expressions which will
+                       get combined with *args and passed on to apply_query_params
+        :type *kargs: key = arrary(str)
 
         :returns:       DataFrame with the query results.
 
         """
 
         units = query.units if hasattr(query, "units") else None
-        if query_params is not None:
-            query = apply_query_params(query, query_params, True)
+        # fold args into kwargs by using the value as the key and the implict value is None
+        for arg in args:
+            kwargs[arg] = None
+
+        # replace any potential place holders in the query with the query params
+        query = apply_query_params(query, kwargs, True)
+
         data_dict = super(Gcam, self).get_data(query)
         data_df = DataFrame(data_dict)
         # The data comming out of gcam is unaggregated so we will need to do that now
@@ -51,24 +59,34 @@ class Gcam(gcam_module.gcam):
         value_col = cols[-2] if cols[-1] == "year" else cols[-1]
         data_df = data_df.groupby(cols.drop(value_col).to_list(), as_index=False).sum()
         if units is not None:
-            data_df.meta = {'units': units}
+            data_df['meta'] = {'units': units}
         return data_df
 
-    def set_data(self, data_df, query, query_params=None):
+    def set_data(self, data_df, query, *args, *kwargs):
         """Changes arbitrary data in a running instance of GCAM.
 
         :param data_df:     DataFrame of data to set
         :type data_df:      DataFrame
         :param query:       GCAM fusion query
-        :param query_params: User options to translate placeholder expressions in query should
-                             it have any
-        :type query_params:  dict(string: array(string))
         :type query:        str
+        :param *args: User options to translate placeholder expressions which will
+                      will be added to the kwargs as dict(arg: None)
+        :type *args:  str
+        :param *kargs: User options to translate placeholder expressions which will
+                       get combined with *args and passed on to apply_query_params
+        :type *kargs: key = arrary(str)
 
         """
 
-        if query_params is not None:
-            query = apply_query_params(query, query_params, False)
+        # fold args into kwargs by using the value as the key and the implict value is None
+        for arg in args:
+            kwargs[arg] = None
+
+        # replace any potential place holders in the query with the query params
+        query = apply_query_params(query, kwargs, False)
+
+        # we need to transform the data from a DataFrame to a dict where the column
+        # name key maps to the column as a numpy array
         data_dict = dict()
         for key, value in data_df.items():
             data_dict[key] = value.to_numpy()
