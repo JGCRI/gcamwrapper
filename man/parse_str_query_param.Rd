@@ -17,11 +17,11 @@ A GCAM Fusion filter string representing the parameters given.
 }
 \description{
 The currently supported operators are:
-`+`: Indicates to read/write to a DataFrame.  Note if `is_get_data` this is always
-implied to be set.
-`*`: which always matches and so no additional operands are necessary (note if
-param_operands is empty this operator is assumed)
+`+`, `-`: Indicates to read/write to a DataFrame if `+` or not to read/write if `-`
+`*`: which always matches and so no additional operands are necessary
 The operators: `=`, `=~` (regular expression matching). Note if `is_get_data` is true
-or the `+` is not set an additional argument must be supplied which is the string to
+or the `-` is set an additional argument must be supplied which is the string to
 be used as the RHS operand in the comparison.
+Finally if param_operands is NULL or empty then if `is_get_data` then c('+', '*') is assumed
+otherwise c('+', '=').
 }

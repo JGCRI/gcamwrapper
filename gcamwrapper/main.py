@@ -1,6 +1,7 @@
 import gcam_module
 from pandas import DataFrame, Series
 from gcamwrapper.query_library import apply_query_params
+import warnings
 
 
 class Gcam(gcam_module.gcam):
@@ -34,9 +35,9 @@ class Gcam(gcam_module.gcam):
         :param *args: User options to translate placeholder expressions which will
                       will be added to the kwargs as dict(arg: None)
         :type *args:  str
-        :param *kargs: User options to translate placeholder expressions which will
-                       get combined with *args and passed on to apply_query_params
-        :type *kargs: key = arrary(str)
+        :param **kargs: User options to translate placeholder expressions which will
+                        get combined with *args and passed on to apply_query_params
+        :type **kargs:  key = arrary(str)
 
         :returns:       DataFrame with the query results.
 
@@ -59,10 +60,16 @@ class Gcam(gcam_module.gcam):
         value_col = cols[-2] if cols[-1] == "year" else cols[-1]
         data_df = data_df.groupby(cols.drop(value_col).to_list(), as_index=False).sum()
         if units is not None:
-            data_df['meta'] = {'units': units}
+            # Attempting to attach meta data to the data frame will generate a warning:
+            # Pandas doesn't allow columns to be created via a new attribute name
+            # We are of course not trying to generate a new column so the warning
+            # is not relevant, thus an explict ignore is needed
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                data_df.meta = {'units': units}
         return data_df
 
-    def set_data(self, data_df, query, *args, *kwargs):
+    def set_data(self, data_df, query, *args, **kwargs):
         """Changes arbitrary data in a running instance of GCAM.
 
         :param data_df:     DataFrame of data to set
@@ -72,9 +79,9 @@ class Gcam(gcam_module.gcam):
         :param *args: User options to translate placeholder expressions which will
                       will be added to the kwargs as dict(arg: None)
         :type *args:  str
-        :param *kargs: User options to translate placeholder expressions which will
-                       get combined with *args and passed on to apply_query_params
-        :type *kargs: key = arrary(str)
+        :param **kargs: User options to translate placeholder expressions which will
+                        get combined with *args and passed on to apply_query_params
+        :type **kargs:  key = arrary(str)
 
         """
 

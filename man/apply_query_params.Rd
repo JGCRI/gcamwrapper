@@ -24,6 +24,6 @@ where we match those keys to `arg_type`.  If `arg_type` is "name" then \link{par
 will be used to process the value of query_params[[arg_tag]] and if "year" then
 \link{parse_int_query_param} is used.
 Note symantics are slightly different if is_get_data is true as described in parse_.*_query_params.
-For any arg_tag which has no entry in query_params it will be replaced with nothing
-which tells GCAM Fusion to match any but do not read/write to the DataFrame for that container.
+For any arg_tag which has no entry in query_params it will be given the results of passing `NULL`
+to parse_int/str_query_param.
 }

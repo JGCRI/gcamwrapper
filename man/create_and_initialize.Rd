@@ -4,8 +4,7 @@
 \alias{create_and_initialize}
 \title{Create GCAM instance}
 \usage{
-create_and_initialize(configuration = "configuration.xml",
-  workdir = ".")
+create_and_initialize(configuration = "configuration.xml", workdir = ".")
 }
 \arguments{
 \item{configuration}{(string) The configuration XML to use.}
