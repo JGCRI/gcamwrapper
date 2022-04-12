@@ -12,7 +12,7 @@
 #include "util/logger/include/logger_factory.h"
 #include "util/base/include/timer.h"
 #include "util/base/include/version.h"
-#include "util/base/include/xml_helper.h"
+#include "util/base/include/xml_parse_helper.h"
 #include "util/base/include/manage_state_variables.hpp"
 
 #include <boost/filesystem/operations.hpp>
@@ -118,7 +118,8 @@ class gcam {
 
 
             // Initialize the LoggerFactory
-            bool success = XMLHelper<void>::parseXML( loggerFileName, &loggerFactoryWrapper );
+            XMLParseHelper::initParser();
+            bool success = XMLParseHelper::parseXML( loggerFileName, &loggerFactoryWrapper );
 
             // Check if parsing succeeded. Non-zero return codes from main indicate
             // failure.
@@ -139,7 +140,7 @@ class gcam {
             mainLog << "Configuration file:  " << configurationFileName << endl;
             mainLog << "Parsing input files..." << endl;
             Configuration* conf = Configuration::getInstance();
-            success = XMLHelper<void>::parseXML( configurationFileName, conf );
+            success = XMLParseHelper::parseXML( configurationFileName, conf );
             // Check if parsing succeeded. Non-zero return codes from main indicate
             // failure.
             if( !success ){
@@ -163,7 +164,7 @@ class gcam {
             }
 
             // Cleanup Xerces. This should be encapsulated with an initializer object to ensure against leakage.
-            XMLHelper<void>::cleanupParser();
+            XMLParseHelper::cleanupParser();
 
             timer.stop();
 

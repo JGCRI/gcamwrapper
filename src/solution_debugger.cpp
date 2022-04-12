@@ -164,7 +164,7 @@ NumericMatrix SolutionDebugger::calcDerivative() {
 NumericVector SolutionDebugger::getSlope() {
   NumericVector slope(createVector<double, NumericVector>(nsolv));
   for(int i = 0; i < nsolv; ++i) {
-    //slope[i] = solnInfoSet.getSolvable(i).getCorrectionSlope();
+    slope[i] = solnInfoSet.getSolvable(i).getCorrectionSlope(priceScaleFactor[i], 1.0/quantityScaleFactor[i]);
   }
   setVectorNames(slope, marketNames);
   return slope;
