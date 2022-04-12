@@ -4,7 +4,7 @@
 \alias{set_data}
 \title{Set some aribtrary data into GCAM}
 \usage{
-set_data(gcam, data, query, query_params = NULL)
+set_data(gcam, data, query, query_params = list())
 }
 \arguments{
 \item{gcam}{(gcam) An initialized GCAM instance}

@@ -45,10 +45,10 @@ run_to_period <- function(gcam, period = NULL) {
 #' @param query_params (list[string] -> array(string)) User options to translate placeholder
 #' @return GCAM instance
 #' @export
-set_data <- function(gcam, data, query, query_params = NULL) {
-  if(!is.null(query_params)) {
-      query <- apply_query_params(query, query_params, FALSE)
-  }
+set_data <- function(gcam, data, query, query_params = list()) {
+  # replace any potential place holders in the query with the query params
+  query <- apply_query_params(query, query_params, FALSE)
+
   gcam$set_data(data, query)
 }
 
@@ -62,11 +62,11 @@ set_data <- function(gcam, data, query, query_params = NULL) {
 #' @export
 #' @importFrom dplyr group_by_at vars summarize_at ungroup as_tibble
 #' @importFrom magrittr %>%
-get_data <- function(gcam, query, query_params = NULL) {
+get_data <- function(gcam, query, query_params = list()) {
   units <- attr(query, 'units')
-  if(!is.null(query_params)) {
-      query <- apply_query_params(query, query_params, TRUE)
-  }
+  # replace any potential place holders in the query with the query params
+  query <- apply_query_params(query, query_params, TRUE)
+
   data <- gcam$get_data(query)
   # The data comming out of gcam is unaggregated so we will need to do that now
   # first figure out what the "value" column is, group by everything else, and summarize

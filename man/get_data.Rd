@@ -4,7 +4,7 @@
 \alias{get_data}
 \title{Get some arbitrary data out of GCAM}
 \usage{
-get_data(gcam, query, query_params = NULL)
+get_data(gcam, query, query_params = list())
 }
 \arguments{
 \item{gcam}{(gcam) An initialized GCAM instance}

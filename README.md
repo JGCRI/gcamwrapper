@@ -148,6 +148,8 @@ query_params <- list(
     "region" = # The key is the place holder "tag"
         c("=", "USA"), # The value is an array with the first value an operator and the second the
                        # RHS operand.  Note for get_data the "+" is implied but could be added explicitly
+                       # If a user wanted to match region = "USA" but not record the result into the
+                       # output DataFrame a user can use the "-" operand instead.
                        # The available operators include:
                        # For strings (@name): "*" (any) "="  or "=~" (regular expression matches)
                        # For ints (@year): "*" (any), "=", "<", "<=", ">", ">="
@@ -155,8 +157,6 @@ query_params <- list(
 # The placeholders will then get transformed into:
 # "world/region[+NamedFilter,MatchesAny]//ghg[+NamedFilter,StringEquals,CO2]/emissions[+YearFilter,IntEquals,2020]")
 # We can then pass the query and query_params and retrieve the results in a DataFrame.
-# Note: if no query_params are given we assume the user is providing GCAM Fusion query
-# and no placeholders need to be translated.
 co2_core <- get_data(g, co2_query, query_params)
 # Returns A tibble: 32 x 4
 #   region                        ghg    year emissions
@@ -177,8 +177,9 @@ co2_core <- get_data(g, co2_query, query_params)
 # and since we didn't explicitly filter we will get a value for all years AND the accompanied
 # year column
 labor_prod_query <- get_query("socioeconomic", "labor_productivity")
-# note the shorthand here, when we have just the key and no value it assumes you want +MatchesAny
-labor_prod <- get_data(g, labor_prod_query, list("region"))
+# Note: if a user did not provide any params for a place holder the default param will be assumed,
+# which is to c("+", "*")
+labor_prod <- get_data(g, labor_prod_query)
 # Returns A tibble: 704 x 3
 #   region          year laborproductivity
 #   <chr>          <int>             <dbl>
@@ -202,9 +203,10 @@ labor_prod %>%
 # set the updated labor productivity values back into the model
 # Note: the syntax for setting data is similar to get_data only now the
 # + indicates to read the value to match from the current row of the table
-# and for that reason, when we are doing set_data you must be explicit on
-# where to include the `+` as apposed to get_data which will implicity add
-# it to your query_params
+# If a user wanted to match region = "USA" instead of reading the value to match
+# from a DataFrame a user can explictly use the "-" operand instead.
+# Note: if a user did not provide any params for a place holder the default param will be assumed,
+# which for set_data is to c("+", "=")
 set_data(g, change_prod, labor_prod_query, list("region" = c("+", "="), "year" = c("+", "=")))
 # double check that the values got set
 double_check <- get_data(g, labor_prod_query, list("region", "year" = c("=", 2020)))
@@ -311,6 +313,8 @@ query_params = dict(
     "region": # The key is the place holder "tag"
         ["=", "USA"], # The value is an array with the first value an operator and the second the
                        # RHS operand.  Note for get_data the "+" is implied but could be added explicitly
+                       # If a user wanted to match region = "USA" but not record the result into the
+                       # output DataFrame a user can use the "-" operand instead.
                        # The available operators include:
                        # For strings (@name): "*" (any) "="  or "=~" (regular expression matches)
                        # For ints (@year): "*" (any), "=", "<", "<=", ">", ">="
@@ -318,9 +322,7 @@ query_params = dict(
 # The placeholders will then get transformed into:
 # "world/region[+NamedFilter,MatchesAny]//ghg[+NamedFilter,StringEquals,CO2]/emissions[+YearFilter,IntEquals,2020]")
 # We can then pass the query and query_params and retrieve the results in a DataFrame.
-# Note: if no query_params are given we assume the user is providing GCAM Fusion query
-# and no placeholders need to be translated.
-co2_core = g.get_data(co2_query, query_params)
+co2_core = g.get_data(co2_query, **query_params)
 # Returns a Pandas.DataFrame: co2_core.head()
 #             region  ghg  year   emissions
 # 0   Africa_Eastern  CO2  2020   27.749129
@@ -334,8 +336,9 @@ co2_core = g.get_data(co2_query, query_params)
 # and since we didn't explicitly filter we will get a value for all years AND the accompanied
 # year column
 labor_prod_query <- get_query("socioeconomic", "labor_productivity")
-# note the shorthand here, when we have just the key and no value it assumes you want +MatchesAny
-labor_prod = g.get_data(labor_prod_query, {"region": None})
+# Note: if a user did not provide any params for a place holder the default param will be assumed,
+# which is to ["+", "*"]
+labor_prod = g.get_data(labor_prod_query)
 # Returns a Pandas.DataFrame: labor_prod.head()
 #            region  year  laborproductivity
 # 0  Africa_Eastern  1975            0.00154
@@ -350,19 +353,20 @@ labor_prod_change.loc[:,'laborproductivity'] = labor_prod_change['laborproductiv
 # set the updated labor productivity values back into the model
 # Note: the syntax for setting data is similar to get_data only now the
 # + indicates to read the value to match from the current row of the table
-# and for that reason, when we are doing set_data you must be explicit on
-# where to include the `+` as apposed to get_data which will implicity add
-# it to your query_params
-g.set_data(labor_prod_change, labor_prod_query, {"region": ["+", "="], "year": ["+", "="]})
+# If a user wanted to match region = "USA" instead of reading the value to match
+# from a DataFrame a user can explictly use the "-" operand instead.
+# Note: if a user did not provide any params for a place holder the default param will be assumed,
+# which for set_data is to ["+", "="]
+g.set_data(labor_prod_change, labor_prod_query, region=["+", "="], year=["+", "="])
 # double check that the values got set
-double_check = g.get_data(labor_prod_query, {"region": None, "year": ["=", 2020]})
+double_check = g.get_data(labor_prod_query, "region", "year"=["=", 2020])
 
 # we have only set the parameters at this point, to see how it effects
 # results we must re-run period 5
 g.run_to_period(5)
 
 # Get the CO2 emissions again and see how they have changed
-co2_change = g.get_data(co2_query, query_params)
+co2_change = g.get_data(co2_query, **query_params)
 co2_diff = co2_core.merge(co2_change, on=["region", "ghg", "year"])
 co2_diff["diff"] = co2_diff["emissions_x"] - co2_diff["emissions_y"]
 
