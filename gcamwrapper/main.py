@@ -143,6 +143,16 @@ class Gcam(gcam_module.gcam):
         else:
             return list(map(lambda x: self.convert_year_to_period(x), year))
 
+    def print_xmldb(self):
+        """Write the full results to an XML Database
+           At the moment all of the options governing XML Database output are
+           locked into the values set in the `configuration` as well as the
+           `XMLDBDriver.properties` file.
+        """
+
+        super(Gcam, self).print_xmldb()
+
+
     def create_solution_debugger(self, period=None):
         """Create a solution debugging object which can be used a single
            evaluation of the model and see how it affects prices, supplies,
