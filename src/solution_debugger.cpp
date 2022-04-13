@@ -153,8 +153,12 @@ NumericVector SolutionDebugger::evaluatePartial(const double aPrice, const int a
 }
 
 NumericMatrix SolutionDebugger::calcDerivative() {
+  std::list<int> indicies;
+  for(int i = 0; i < nsolv; ++i) {
+    indicies.push_back(i);
+  }
   UBMATRIX jac(nsolv,nsolv);
-  fdjac(F, x, fx, jac, true);
+  fdjac(F, x, fx, jac, indicies, true);
   NumericMatrix jacRet = wrapMatrix(jac, nsolv);
   Interp::setMatrixNames(jacRet, marketNames);
 

@@ -17,16 +17,15 @@ GCAM_INCLUDE = os.environ["GCAM_INCLUDE"]
 GCAM_LIB = os.environ["GCAM_LIB"]
 BOOST_INCLUDE = os.environ["BOOST_INCLUDE"]
 BOOST_LIB = os.environ["BOOST_LIB"]
-XERCES_INCLUDE = os.environ["XERCES_INCLUDE"]
-XERCES_LIB = os.environ["XERCES_LIB"]
 TBB_INCLUDE = os.environ["TBB_INCLUDE"]
 TBB_LIB = os.environ["TBB_LIB"]
 EIGEN_INCLUDE = os.environ["EIGEN_INCLUDE"]
 JAVA_INCLUDE = os.environ["JAVA_INCLUDE"]
+JAVA_PLATFORM_INCLUDE = JAVA_INCLUDE + '/' + os.uname()[0].lower()
 JAVA_LIB = os.environ["JAVA_LIB"]
 
 # the exact set of libs to link will be platform specific due to boost
-gcam_libs = ['gcam', 'hector', 'jvm', 'xerces-c', 'tbb', 'tbbmalloc', 'tbbmalloc_proxy']
+gcam_libs = ['gcam', 'hector', 'jvm', 'tbb', 'tbbmalloc', 'tbbmalloc_proxy']
 gcam_compile_args = []
 gcam_link_args = []
 if platform.system() == "Windows" :
@@ -41,7 +40,7 @@ else :
     # ensure we use the correct c++ std
     gcam_compile_args += ['-std=c++14']
     # add rpath info to find the dynamic linked libs
-    gcam_link_args += ['-Wl,-rpath,'+XERCES_LIB, '-Wl,-rpath,'+JAVA_LIB, '-Wl,-rpath,'+BOOST_LIB, '-Wl,-rpath,'+TBB_LIB]
+    gcam_link_args += ['-Wl,-rpath,'+JAVA_LIB, '-Wl,-rpath,'+BOOST_LIB, '-Wl,-rpath,'+TBB_LIB]
 
 gcam_module = Extension(
     'gcam_module',
@@ -50,8 +49,8 @@ gcam_module = Extension(
         'src/query_processor_base.cpp',
         'src/set_data_helper.cpp',
         'src/get_data_helper.cpp'],
-    include_dirs=['inst/include', GCAM_INCLUDE, BOOST_INCLUDE, XERCES_INCLUDE, TBB_INCLUDE, EIGEN_INCLUDE, JAVA_INCLUDE],
-    library_dirs=[GCAM_LIB, BOOST_LIB, XERCES_LIB, TBB_LIB, JAVA_LIB],
+    include_dirs=['inst/include', GCAM_INCLUDE, BOOST_INCLUDE, TBB_INCLUDE, EIGEN_INCLUDE, JAVA_INCLUDE, JAVA_PLATFORM_INCLUDE],
+    library_dirs=[GCAM_LIB, BOOST_LIB, TBB_LIB, JAVA_LIB],
     libraries=gcam_libs,
     define_macros=[('NDEBUG', '1'),
                    ('BOOST_DATE_TIME_NO_LIB', '1'),
