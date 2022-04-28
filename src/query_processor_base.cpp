@@ -106,15 +106,18 @@ AMatchesValue* QueryProcessorBase::wrapPredicate(AMatchesValue* aToWrap, const s
 
 /*!
  * \brief Parses a single filter step.
- * \details Follows the same basic processing as the standard GCAM Fusion 
+ * \details Follows the same basic processing as the standard GCAM Fusion
  *          implementation of parseFilterStepStr however adds some additional
  *          support for the `+` extension to map filters to a get / set operation.
  * \param aFilterStepStr The unparsed filter step string.
  * \param aCol The current column number which should correspond to a DataFrame
  *             which is useful should this be a Set Data operation.
+ * \param aIsLastStep A boolean flag to indicate if this is the last filter step.  This
+ *                    is useful to know to be able to implement some implicit behavior with
+ *                    respect to adding a "year" column if we match a period vector of data.
  * \return A FilterStep which is the parsed representation of the given aFilterStepStr.
  */
-FilterStep* QueryProcessorBase::parseFilterStepStr( const std::string& aFilterStepStr, int& aCol ) {
+FilterStep* QueryProcessorBase::parseFilterStepStr( const std::string& aFilterStepStr, int& aCol, const bool aIsLastStep ) {
     auto openBracketIter = std::find( aFilterStepStr.begin(), aFilterStepStr.end(), '[' );
     if( openBracketIter == aFilterStepStr.end() ) {
         // no filter just the data name
@@ -160,7 +163,7 @@ FilterStep* QueryProcessorBase::parseFilterStepStr( const std::string& aFilterSt
         }
         else if( filterOptions[ 0 ] == "YearFilter" ) {
             if(isRead) {
-                matcher = wrapPredicate(matcher, "year", true);
+                matcher = wrapPredicate(matcher, aIsLastStep ? "year" : dataName, true);
             }
 
             filterStep = new FilterStep( dataName, new YearFilter( matcher ) );
@@ -188,7 +191,7 @@ void QueryProcessorBase::parseFilterString(const std::string& aFilterStr ) {
   mFilterSteps.resize(filterStepsStr.size());
   int col = 0;
   for( size_t i = 0; i < filterStepsStr.size(); ++i ) {
-    mFilterSteps[ i ] = parseFilterStepStr( filterStepsStr[ i ], col );
+    mFilterSteps[ i ] = parseFilterStepStr( filterStepsStr[ i ], col, (i+1) == filterStepsStr.size() );
   }
   mDataColName = mFilterSteps.back()->mDataName;
 }

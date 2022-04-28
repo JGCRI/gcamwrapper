@@ -1,14 +1,112 @@
+resource:
+    production: ["world/region{region@name}/resource{resource@name}/subresource/technology{tech@name}/period/output/physical-output{year@year}", "EJ/km3/others"]
+    price: ["world/region{region@name}/resource{resource@name}/price{year@year}", "1975$/GJ or m3"]
+    tech_change: ["world/region{region@name}/resource{resource@name}/subresource{subresource@name}/techChange{year@year}", "%/yr"]
+    cal_price_adder: ["world/region{region@name}/resource{resource@name}/subresource{subresource@name}/price-adder{year@year}", "1975$/GJ"]
+    # max resource for renewable resources
+    max_available: ["world/region{region@name}/resource{resource@name}/subresource{subresource@name}/maxSubResource{year@year}", "EJ or km3"]
+    # params for smooth renewable resources
+    price_exponent: ["world/region{region@name}/resource{resource@name}/subresource{subresource@name}/price-exponent", "unitless"]
+    mid_price: ["world/region{region@name}/resource{resource@name}/subresource{subresource@name}/mid-price", "1975$/GJ"]
+    grade:
+        available: ["world/region{region@name}/resource{resource@name}/subresource{subresource@name}/grade{grade@name}/available", "EJ/km3/others"]
+        extraction_cost: ["world/region{region@name}/resource{resource@name}/subresource{subresource@name}/grade{grade@name}/extractioncost", "1975$/GJ or m3"]
+        # the extraction cost adjusted for tech change
+        adjusted_cost: ["world/region{region@name}/resource{resource@name}/subresource{subresource@name}/grade{grade@name}/totalcost{year@year}", "1975$/GJ or m3"]
+
 electricity:
-    share_weight: ["world/region{region@name}/sector[NamedFilter,StringEquals,electricity]/subsector{subsector@name}/share-weight{year@year}", "unitless"]
+    generation: ["world/region{region@name}/sector[+NamedFilter,StringEquals,electricity]/subsector{subsector@name}/technology{tech@name}/period/output{output@name}/physical-output{year@year}", "EJ"]
+    generation_cooling: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^elec_]/subsector{subsector@name}/technology{tech@name}/period/output{output@name}/physical-output{year@year}", "EJ"]
+    generation_cooling_vintage: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^elec_]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/output{output@name}/physical-output{year@year}", "EJ"]
+    inputs_cooling: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^elec_]/subsector{subsector@name}/technology{tech@name}/period/input{input@name}/physical-demand{year@year}", "EJ or km3"]
+    subsector_share_weight: ["world/region{region@name}/sector[NamedFilter,StringEquals,electricity]/subsector{subsector@name}/share-weight{year@year}", "unitless"]
+
+refining:
+    production: ["world/region{region@name}/sector[+NamedFilter,StringEquals,refining]/subsector{subsector@name}/technology{tech@name}/period/output{output@name}/physical-output{year@year}", "EJ"]
+    production_vintage: ["world/region{region@name}/sector[+NamedFilter,StringEquals,refining]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/output{output@name}/physical-output{year@year}", "EJ"]
+    input: ["world/region{region@name}/sector[+NamedFilter,StringEquals,refining]/subsector{subsector@name}/technology{tech@name}/period/input{input@name}/physical-demand{year@year}", "EJ"]
+    sector_cost: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^refin]/price", "1975$/GJ"]
+    tech_cost: ["world/region{region@name}/sector[+NamedFilter,StringEquals,refining]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/cost", "1975$/GJ"]
+    subsector_share_weight: ["world/region{region@name}/sector[+NamedFilter,StringEquals,refining]/subsector{subsector@name}/share-weight{year@year}", "unitless"]
+    tech_share_weight: ["world/region{region@name}/sector[+NamedFilter,StringEquals,refining]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/share-weight", "unitless"]
+    input_coef: ["world/region{region@name}/sector[+NamedFilter,StringEquals,refining]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/input{input@name}/current-coef{year@year}", "unitless"]
+    non_energy_cost: ["world/region{region@name}/sector[+NamedFilter,StringEquals,refining]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/input{input@name}/adjusted-cost{year@year}", "1975$/GJ"]
+
+buildings:
+    floorspace: ["world/region{region@name}/consumer{consumer@name}//nodeInput[+NamedFilter,StringRegexMatches,building]/base-building-size{year@year}", "billion m2"]
+    service: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(resid|comm)]/subsector{subsector@name}/technology{tech@name}/period/output{output@name}/physical-output{year@year}", "EJ"]
+    input: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(resid|comm)]/subsector{subsector@name}/technology{tech@name}/period/input{input@name}/physical-demand{year@year}", "EJ"]
+    sector_cost: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(resid|comm)]/price", "1975$/GJ"]
+    tech_cost: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(resid|comm)]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/cost", "1975$/GJ"]
+    subsector_share_weight: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(resid|comm)]/subsector{subsector@name}/share-weight{year@year}", "unitless"]
+    tech_share_weight: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(resid|comm)]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/share-weight", "unitless"]
+    input_coef: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(resid|comm)]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/input{input@name}/current-coef{year@year}", "unitless"]
+    non_energy_cost: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(resid|comm)]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/input{input@name}/adjusted-cost{year@year}", "1975$/GJ"]
+
+industry:
+    service: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(N fertilizer|cement|^industrial)]/subsector{subsector@name}/technology{tech@name}/period/output{output@name}/physical-output{year@year}", "EJ"]
+    input: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(N fertilizer|cement|^industrial)]/subsector{subsector@name}/technology{tech@name}/period/input{input@name}/physical-demand{year@year}", "EJ"]
+    sector_cost: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(N fertilizer|cement|^industrial)]/price", "1975$/GJ"]
+    tech_cost: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(N fertilizer|cement|^industrial)]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/cost", "1975$/GJ"]
+    subsector_share_weight: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(N fertilizer|cement|^industrial)]/subsector{subsector@name}/share-weight{year@year}", "unitless"]
+    tech_share_weight: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(N fertilizer|cement|^industrial)]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/share-weight", "unitless"]
+    input_coef: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(N fertilizer|cement|^industrial)]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/input{input@name}/current-coef{year@year}", "unitless"]
+    non_energy_cost: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,(N fertilizer|cement|^industrial)]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/input{input@name}/adjusted-cost{year@year}", "1975$/GJ"]
+
+transportation:
+    service: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^trn_]/subsector{subsector@name}/technology{tech@name}/period/output{output@name}/physical-output{year@year}", "million pass|ton-km"]
+    input: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^trn_]/subsector{subsector@name}/technology{tech@name}/period/input{input@name}/physical-demand{year@year}", "EJ"]
+    sector_cost: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^trn_]/price", "1990$/pass|ton-km"]
+    tech_cost: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^trn_]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/cost", "1990$/pass|ton-km"]
+    subsector_share_weight: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^trn_]/subsector{subsector@name}/share-weight{year@year}", "unitless"]
+    tech_share_weight: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^trn_]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/share-weight", "unitless"]
+    input_coef: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^trn_]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/input{input@name}/current-coef{year@year}", "unitless"]
+    non_energy_cost: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^trn_]/subsector{subsector@name}/technology{tech@name}/period{vintage@year}/input{input@name}/adjusted-cost{year@year}", "1975$/GJ"]
+
+
 socioeconomic:
     labor_productivity: ["world/region{region@name}/GDP/laborproductivity{year@year}", "unitless"]
     population: ["world/region{region@name}/demographic/population{year@year}/totalPop", "thous ppl"]
+    gdp: ["world/region{region@name}/GDP/gdpValue{year@year}", "million 1990$"]
+
 emissions:
     #TODO: useful for get data but not set
-    co2_emissions: ["world/region{region@name}//ghg[NamedFilter,StringEquals,CO2]/emissions{year@year}", "MTC"]
+    co2_emissions_agg: ["world/region{region@name}//ghg[NamedFilter,StringEquals,CO2]/emissions{year@year}", "MTC"]
+    ghg_emissions_agg: ["world/region{region@name}//ghg{ghg@name}/emissions{year@year}", "Tg or MTC or Gg"]
+    emissions_sector: ["world/region{region@name}/sector{sector@name}//technology{tech@name}/period/ghg{ghg@name}/emissions{year@year}", "Tg or MTC or Gg"]
+    emissions_resource: ["world/region{region@name}/resource{resource@name}//technology{tech@name}/period/ghg{ghg@name}/emissions{year@year}", "Tg or MTC or Gg"]
+    sequestration: ["world/region{region@name}/sector{sector@name}//technology{tech@name}/period/capture-component/sequestered-amount{year@year}", "MTC"]
+    
+
 ag:
-    prices: ["world/region{region@name}/sector{sector@name}/price{year@year}", "1975$/kg"]
+    price: ["world/region{region@name}/sector{sector@name}/price{year@year}", "1975$/kg"]
+    production: ["world/region{region@name}/sector{sector@name}/subsector{subsector@name}/technology[+NamedFilter,StringRegexMatches,(IRR|RFD)_(hi|lo)$]/period/output{output@name}/physical-output{year@year}", "Mt"
+    input: ["world/region{region@name}/sector{sector@name}/subsector{subsector@name}/technology[+NamedFilter,StringRegexMatches,(IRR|RFD)_(hi|lo)$]/period/input{input@name}/physical-input{year@year}", "Mt N or km3"
     yield: ["world/region{region@name}/sector{sector@name}/subsector/technology{tech@name}/period{year@year}/yield", "Mt/thous km2"]
+    variable_cost: ["world/region{region@name}/sector{sector@name}/subsector/technology{tech@name}/period{year@year}/nonLandVariableCost", "1975$/Mt"]
 
 land:
     land_allocation: ["world/region{region@name}//child-nodes{leaf@name}/land-allocation{year@year}", "thous km2"]
+    # WARNING: this query takes a long time to run, may want to apply filters
+    luc_emissions: ["world/region{region@name}//child-nodes{leaf@name}/carbon-calc/land-use-change-emissions{year@year}", "MTC"]
+    above_carbon_density: ["world/region{region@name}//child-nodes{leaf@name}/carbon-calc/above-ground-carbon-density", "kg/m2"]
+    below_carbon_density: ["world/region{region@name}//child-nodes{leaf@name}/carbon-calc/below-ground-carbon-density", "kg/m2"]
+    mature_ag: ["world/region{region@name}//child-nodes{leaf@name}/carbon-calc/mature-age", "kg/m2"]
+
+water:
+    withdrawals:
+        supply: ["world/region{region@name}/resource{resource@name}/subresource[NamedFilter,StringRegexMatches,(runoff|groundwater)]/technology{tech@name}/period/output/physical-output{year@year}", "km3"]
+        supply_mapping_desal: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^water_td_.*_W$]/subsector{subsector@name}/technology{tech@name}/period/output/physical-output{year@year}", "km3"]
+        demand_mapping_sector: ["world/region{region@name}/sector/subsector/technology/period/input[+NamedFilter,StringRegexMatches,_W$]/physical-demand{year@year}", "km3"]
+        demand: ["world/region{region@name}/sector{sector@name}/subsector{subsector@name}/technology{tech@name}/period/input[+NamedFilter,StringRegexMatches,_W$]/physical-demand{year@year}", "km3"]
+        price: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^water_td_.*_W$]/price{year@year}", "1975$/m3"]
+    consumption:
+        supply_mapping_desal: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^water_td_.*_C$]/subsector{subsector@name}/technology{tech@name}/period/output/physical-output{year@year}", "km3"]
+        demand_mapping_sector: ["world/region{region@name}/sector/subsector/technology/period/input[+NamedFilter,StringRegexMatches,_C$]/physical-demand{year@year}", "km3"]
+        demand: ["world/region{region@name}/sector{sector@name}/subsector{subsector@name}/technology{tech@name}/period/input[+NamedFilter,StringRegexMatches,_C$]/physical-demand{year@year}", "km3"]
+        price: ["world/region{region@name}/sector[+NamedFilter,StringRegexMatches,^water_td_.*_C$]/price{year@year}", "1975$/m3"]
+
+market:
+    price: ["marketplace/market{market@name}/market-period{year@year}/price", "various"]
+    supply: ["marketplace/market{market@name}/market-period{year@year}/supply", "various"]
+    demand: ["marketplace/market{market@name}/market-period{year@year}/demand", "various"]

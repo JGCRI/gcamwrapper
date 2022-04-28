@@ -34,7 +34,7 @@ protected:
 
   void parseFilterString(const std::string& aFilterStr );
 
-  FilterStep* parseFilterStepStr( const std::string& aFilterStepStr, int& aCol );
+  FilterStep* parseFilterStepStr( const std::string& aFilterStepStr, int& aCol, const bool aIsLastStep );
 
   AMatchesValue* createMatchesAny() const;
 
