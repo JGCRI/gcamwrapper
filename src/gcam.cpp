@@ -14,6 +14,8 @@
 #include "util/base/include/version.h"
 #include "util/base/include/xml_parse_helper.h"
 #include "util/base/include/manage_state_variables.hpp"
+#include "util/base/include/time_vector.h"
+#include "reporting/include/xml_db_outputter.h"
 
 #include <boost/filesystem/operations.hpp>
 
@@ -98,6 +100,16 @@ class gcam {
               Interp::stop("GCAM did not successfully initialize.");
           }
           return scenario->getModeltime()->getyr_to_per(aYear);
+      }
+
+      void printXMLDB() const {
+          if(!isInitialized) {
+              Interp::stop("GCAM did not successfully initialize.");
+          }
+          XMLDBOutputter xmldb;
+          scenario->accept(&xmldb, -1);
+          xmldb.finish();
+          xmldb.finalizeAndClose();
       }
 
     private:
@@ -190,6 +202,7 @@ RCPP_MODULE(gcam_module) {
         .method("get_current_period", &gcam::getCurrentPeriod, "get the last run model period")
         .method("convert_period_to_year", &gcam::convertPeriodToYear, "convert a GCAM model period to year")
         .method("convert_year_to_period", &gcam::convertYearToPeriod, "convert a GCAM model year to model period")
+        .method("print_xmldb", &gcam::printXMLDB, "write the full XML Database results")
         ;
 
   Rcpp::class_<SolutionDebugger>("SolutionDebugger")
@@ -222,6 +235,7 @@ BOOST_PYTHON_MODULE(gcam_module) {
         .def("get_current_period", &gcam::getCurrentPeriod, "get the last run model period")
         .def("convert_period_to_year", &gcam::convertPeriodToYear, "convert a GCAM model period to year")
         .def("convert_year_to_period", &gcam::convertYearToPeriod, "convert a GCAM model year to model period")
+        .def("print_xmldb", &gcam::printXMLDB, "write the full XML Database results")
         ;
     to_python_converter<Interp::NumericVector, Interp::vec_to_python<Interp::NumericVector> >();
     to_python_converter<Interp::StringVector, Interp::vec_to_python<Interp::StringVector> >();

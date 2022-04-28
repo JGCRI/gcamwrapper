@@ -120,10 +120,10 @@ convert_period_to_year <- function(gcam, period) {
     ret
 }
 
-#' Convert from a GCAM model year to model period 
+#' Convert from a GCAM model year to model period
 #' @param gcam (gcam) An initialized GCAM instance
 #' @param year (integer vector) The model year to convert to period
-#' @return (integer vector) The corresponding model period 
+#' @return (integer vector) The corresponding model period
 #' @export
 convert_year_to_period <- function(gcam, year) {
     if(length(year) == 0) {
@@ -137,6 +137,16 @@ convert_year_to_period <- function(gcam, year) {
     }
 
     ret
+}
+
+#' Write the full results to an XML Database
+#' @details At the moment all of the options governing XML Database output are
+#' locked into the values set in the \code{configuration} as well as the
+#' \code{XMLDBDriver.properties} file.
+#' @param gcam (gcam) An initialized GCAM instance
+#' @export
+print_xmldb <- function(gcam) {
+  gcam$print_xmldb()
 }
 
 #' Create a solution debugging object
