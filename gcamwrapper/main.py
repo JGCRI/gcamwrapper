@@ -153,13 +153,16 @@ class Gcam(gcam_module.gcam):
         super(Gcam, self).print_xmldb()
 
 
-    def create_solution_debugger(self, period=None):
+    def create_solution_debugger(self, period=None, market_filter="solvable"):
         """Create a solution debugging object which can be used a single
            evaluation of the model and see how it affects prices, supplies,
            and demands amongst other things..
 
         :param period:   GCAM model period to create the debugger
         :type period:    integer
+        :param market_filter: A `<solution-info-filter>` string in the same
+                              format as in the solver config XML.  The default is "solvable".
+        :type market_filter:  str
 
         :returns:        A SolutionDebugger object
 
@@ -167,7 +170,7 @@ class Gcam(gcam_module.gcam):
 
         if period is None:
             period = self.get_current_period()
-        sd = super(Gcam, self).create_solution_debugger(period)
+        sd = super(Gcam, self).create_solution_debugger(period, market_filter)
         sd.__class__ = SolutionDebugger
         return sd
 

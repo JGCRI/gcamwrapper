@@ -1,9 +1,12 @@
 
 #include "solution_debugger.h"
 
+#include <memory>
+
 #include "containers/include/world.h"
 #include "solution/util/include/solution_info.h"
-#include "solution/util/include/solvable_solution_info_filter.h"
+#include "solution/util/include/isolution_info_filter.h"
+#include "solution/util/include/solution_info_filter_factory.h"
 #include "solution/util/include/solution_info_param_parser.h"
 #include "marketplace/include/marketplace.h"
 #include "solution/util/include/fdjac.hpp"
@@ -11,10 +14,18 @@
 
 using namespace Interp;
 
-SolutionDebugger SolutionDebugger::createInstance(const int aPeriod) {
+SolutionDebugger SolutionDebugger::createInstance(const int aPeriod, const std::string& aMarketFilterStr) {
   SolutionInfoSet solnInfoSet( scenario->getMarketplace() );
   SolutionInfoParamParser solnParams;
   solnInfoSet.init( aPeriod, 0.001, 0.001, &solnParams );
+
+  std::unique_ptr<ISolutionInfoFilter> filter(SolutionInfoFilterFactory::createSolutionInfoFilterFromString(aMarketFilterStr));
+  if(filter.get()) {
+    solnInfoSet.updateSolvable(filter.get());
+  }
+  else {
+    Interp::stop("Could not parse info filter: " + aMarketFilterStr);
+  }
 
   return SolutionDebugger(scenario->getWorld(), scenario->getMarketplace(), solnInfoSet, aPeriod);
 }
@@ -28,19 +39,13 @@ SolutionDebugger::SolutionDebugger(World *w, Marketplace *m, SolutionInfoSet &si
   F(solnInfoSet,w,m,per,false),
   x(nsolv),
   fx(nsolv),
-  marketNames(createVector<std::string, StringVector>(nsolv)),
-  priceScaleFactor(createVector<double, NumericVector>(nsolv)),
-  quantityScaleFactor(createVector<double, NumericVector>(nsolv))
+  marketNames(createVector<std::string, StringVector>(nsolv))
 {
   std::vector<SolutionInfo> smkts(solnInfoSet.getSolvableSet());
   for(unsigned int i = 0; i < smkts.size(); ++i) {
     x[i] = smkts[i].getPrice();
     marketNames[i] = smkts[i].getName().c_str();
-    priceScaleFactor[i] = std::max(smkts[i].getForecastPrice(), 0.001);
-    quantityScaleFactor[i] = std::abs(smkts[i].getForecastDemand());
   }
-  setVectorNames(priceScaleFactor, marketNames);
-  setVectorNames(quantityScaleFactor, marketNames);
 
   F.scaleInitInputs(x);
   F(x, fx);
@@ -55,7 +60,7 @@ NumericVector SolutionDebugger::getPrices(const bool aScaled) {
   for(int i = 0; i < nsolv; ++i) {
       double val = x[i];
       if(!aScaled) {
-          val *= priceScaleFactor[i];
+          val *= F.mxscl[i];
       }
       ret[i] = val;
   }
@@ -75,7 +80,7 @@ NumericVector SolutionDebugger::getSupply(const bool aScaled) {
   for(int i = 0; i < nsolv; ++i) {
       double val = solnInfoSet.getSolvable(i).getSupply();
       if(aScaled) {
-          val /= quantityScaleFactor[i];
+          val /= 1.0/F.mfxscl[i];
       }
     ret[i] = val;
   }
@@ -88,7 +93,7 @@ NumericVector SolutionDebugger::getDemand(const bool aScaled) {
   for(int i = 0; i < nsolv; ++i) {
       double val = solnInfoSet.getSolvable(i).getDemand();
       if(aScaled) {
-          val /= quantityScaleFactor[i];
+          val /= 1.0/F.mfxscl[i];
       }
     ret[i] = val;
   }
@@ -97,11 +102,21 @@ NumericVector SolutionDebugger::getDemand(const bool aScaled) {
 }
 
 NumericVector SolutionDebugger::getPriceScaleFactor() {
-  return priceScaleFactor;
+  NumericVector ret(createVector<double, NumericVector>(nsolv));
+  for(int i = 0; i < nsolv; ++i) {
+    ret[i] = F.mxscl[i];
+  }
+  setVectorNames(ret, marketNames);
+  return ret;
 }
 
 NumericVector SolutionDebugger::getQuantityScaleFactor() {
-  return quantityScaleFactor;
+  NumericVector ret(createVector<double, NumericVector>(nsolv));
+  for(int i = 0; i < nsolv; ++i) {
+    ret[i] = 1.0/F.mfxscl[i];
+  }
+  setVectorNames(ret, marketNames);
+  return ret;
 }
 
 void SolutionDebugger::setPrices(const NumericVector& aPrices, const bool aScaled) {
@@ -122,14 +137,18 @@ NumericVector SolutionDebugger::evaluate(const NumericVector& aPrices, const boo
   }
   setPrices(aPrices, aScaled);
 
+  std::unique_ptr<double> resetState;
   if(aResetAfterCalc) {
-    scenario->getManageStateVariables()->setPartialDeriv(true);
-    F.partial(1);
+    resetState.reset(new double[scenario->getManageStateVariables()->mNumCollected]);
+    memcpy(resetState.get(),
+           scenario->getManageStateVariables()->mStateData[0],
+           (sizeof( double)) * scenario->getManageStateVariables()->mNumCollected);
   }
   F(x,fx);
   NumericVector fx_ret = getFX();
   if(aResetAfterCalc) {
-    F.partial(-1);
+    memcpy(scenario->getManageStateVariables()->mStateData[0], resetState.get(),
+           (sizeof( double)) * scenario->getManageStateVariables()->mNumCollected);
     x = x_restore;
     fx = fx_restore;
   }
@@ -139,7 +158,7 @@ NumericVector SolutionDebugger::evaluate(const NumericVector& aPrices, const boo
 
 NumericVector SolutionDebugger::evaluatePartial(const double aPrice, const int aIndex, const bool aScaled) {
   double x_restore = x[aIndex];
-  x[aIndex] = aScaled ? aPrice : aPrice / priceScaleFactor[aIndex];
+  x[aIndex] = aScaled ? aPrice : aPrice / F.mxscl[aIndex];
   scenario->getManageStateVariables()->setPartialDeriv(true);
   F.partial(aIndex);
   UBVECTOR fx_restore = fx;
@@ -168,7 +187,7 @@ NumericMatrix SolutionDebugger::calcDerivative() {
 NumericVector SolutionDebugger::getSlope() {
   NumericVector slope(createVector<double, NumericVector>(nsolv));
   for(int i = 0; i < nsolv; ++i) {
-    slope[i] = solnInfoSet.getSolvable(i).getCorrectionSlope(priceScaleFactor[i], 1.0/quantityScaleFactor[i]);
+    slope[i] = solnInfoSet.getSolvable(i).getCorrectionSlope(F.mxscl[i], 1.0/F.mfxscl[i]);
   }
   setVectorNames(slope, marketNames);
   return slope;

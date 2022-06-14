@@ -47,6 +47,7 @@ class gcam {
             scenario->mManageStateVars = 0;
             runner.reset(0);
             scenario = 0;
+            Configuration::reset();
         }
 
         void runToPeriod(const int aPeriod ) {
@@ -76,10 +77,10 @@ class gcam {
         return helper.run(runner->getInternalScenario());
       }
 
-      SolutionDebugger createSolutionDebugger(const int aPeriod) {
+      SolutionDebugger createSolutionDebugger(const int aPeriod, const std::string& aMarketFilterStr) {
         delete scenario->mManageStateVars;
         scenario->mManageStateVars = new ManageStateVariables(aPeriod);
-        return SolutionDebugger::createInstance(aPeriod);
+        return SolutionDebugger::createInstance(aPeriod, aMarketFilterStr);
       }
 
       int getCurrentPeriod() const {
@@ -116,7 +117,7 @@ class gcam {
         bool isInitialized;
         int mCurrentPeriod;
         LoggerFactoryWrapper loggerFactoryWrapper;
-        auto_ptr<IScenarioRunner> runner;
+        unique_ptr<IScenarioRunner> runner;
         void initializeScenario(string configurationArg) {
             string loggerFactoryArg = "log_conf.xml";
 

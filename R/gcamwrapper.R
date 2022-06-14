@@ -156,13 +156,15 @@ print_xmldb <- function(gcam) {
 #' @param gcam (gcam) An initialized GCAM instance
 #' @param period (integer) GCAM model period to create the debugger or if NULL
 #' use the last run model period.
+#' @param market_filter (string) A \code{<solution-info-filter>} string in the same
+#' format as in the solver config XML.  The default is "solvable".
 #' @return A SolutionDebugger object
 #' @export
-create_solution_debugger <- function(gcam, period = NULL) {
+create_solution_debugger <- function(gcam, period = NULL, market_filter = "solvable") {
   if(is.null(period)) {
       period <- get_current_period(gcam)
   }
-  gcam$create_solution_debugger(period)
+  gcam$create_solution_debugger(period, market_filter)
 }
 
 #' Gets the prices

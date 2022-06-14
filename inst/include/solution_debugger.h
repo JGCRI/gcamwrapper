@@ -12,7 +12,7 @@ class Marketplace;
 
 class SolutionDebugger {
 public:
-  static SolutionDebugger createInstance(const int aPeriod);
+  static SolutionDebugger createInstance(const int aPeriod, const std::string& aMarketFilterStr);
 
   SolutionDebugger(World *w, Marketplace *m, SolutionInfoSet &sisin, int per);
 
@@ -68,8 +68,6 @@ private:
   UBVECTOR x;
   UBVECTOR fx;
   Interp::StringVector marketNames;
-  Interp::NumericVector priceScaleFactor;
-  Interp::NumericVector quantityScaleFactor;
 };
 
 #endif // __SOLUTION_DEBUGGER_H__
