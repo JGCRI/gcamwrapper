@@ -80,8 +80,8 @@ emissions:
 
 ag:
     price: ["world/region{region@name}/sector{sector@name}/price{year@year}", "1975$/kg"]
-    production: ["world/region{region@name}/sector{sector@name}/subsector{subsector@name}/technology[+NamedFilter,StringRegexMatches,(IRR|RFD)_(hi|lo)$]/period/output{output@name}/physical-output{year@year}", "Mt"
-    input: ["world/region{region@name}/sector{sector@name}/subsector{subsector@name}/technology[+NamedFilter,StringRegexMatches,(IRR|RFD)_(hi|lo)$]/period/input{input@name}/physical-input{year@year}", "Mt N or km3"
+    production: ["world/region{region@name}/sector{sector@name}/subsector{subsector@name}/technology[+NamedFilter,StringRegexMatches,(IRR|RFD)_(hi|lo)$]/period/output{output@name}/physical-output{year@year}", "Mt"]
+    input: ["world/region{region@name}/sector{sector@name}/subsector{subsector@name}/technology[+NamedFilter,StringRegexMatches,(IRR|RFD)_(hi|lo)$]/period/input{input@name}/physical-input{year@year}", "Mt N or km3"]
     yield: ["world/region{region@name}/sector{sector@name}/subsector/technology{tech@name}/period{year@year}/yield", "Mt/thous km2"]
     variable_cost: ["world/region{region@name}/sector{sector@name}/subsector/technology{tech@name}/period{year@year}/nonLandVariableCost", "1975$/Mt"]
 
