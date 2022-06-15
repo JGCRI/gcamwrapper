@@ -32,6 +32,7 @@ Scenario* scenario;
 class gcam {
     public:
         gcam(string aConfiguration, string aWorkDir):isInitialized(false), mCurrentPeriod(0) {
+            mCoutOrig = cout.rdbuf(Interp::getInterpCout().rdbuf());
             try {
                 boost::filesystem::current_path(boost::filesystem::path(aWorkDir));
             } catch(...) {
@@ -48,6 +49,7 @@ class gcam {
             runner.reset(0);
             scenario = 0;
             Configuration::reset();
+            cout.rdbuf(mCoutOrig);
         }
 
         void runToPeriod(const int aPeriod ) {
@@ -115,6 +117,7 @@ class gcam {
 
     private:
         bool isInitialized;
+        std::streambuf* mCoutOrig;
         int mCurrentPeriod;
         LoggerFactoryWrapper loggerFactoryWrapper;
         unique_ptr<IScenarioRunner> runner;
