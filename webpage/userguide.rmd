@@ -1,0 +1,81 @@
+---
+pagetitle: gcamwrapper
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    #toc_depth: 3
+    #number_sections: false
+    theme: cosmo
+    #inverse: true
+---
+
+```{r child = 'header.rmd'}
+```
+
+<!-------------------------->
+<!-------------------------->
+# Data
+<!-------------------------->
+<!-------------------------->
+<p align="center">![](images/divider.png)</p>
+
+<br>
+
+## Final Outputs
+
+```{r, results = 'show', eval=TRUE, echo=FALSE, warning=FALSE, error = FALSE, message = FALSE}
+library(kableExtra)
+data.frame(
+    Model     = c("gcam_v5p3_im3",
+                  "gcam_v5p3_im3",
+                  "gcam_v5p3_im3",
+                  "gcam_v5p3_im3",
+                  "gcam_v5p3_im3",
+                  "gcam_v5p3_im3",
+                  "gcam_v5p3_im3",
+                  "gcam_v5p3_im3",
+                 "gcamextractor",
+                 "gcamextractor",
+                 "gcamextractor"),
+    Scenario = c("rcp85cooler_ssp3",
+                 "rcp85cooler_ssp5",
+                 "rcp85hotter_ssp3",
+                 "rcp85hotter_ssp5",
+                 "rcp45cooler_ssp3",
+                 "rcp45cooler_ssp5",
+                 "rcp45hotter_ssp3",
+                 "rcp45hotter_ssp5",
+                 "all",
+                 "all",
+                 "all"),
+    `Used by` = c("gcamextractor",
+                  "gcamextractor",
+                  "gcamextractor",
+                  "gcamextractor",
+                  "gcamextractor",
+                  "gcamextractor",
+                  "gcamextractor",
+                  "gcamextractor",
+                  "n/a",
+                  "cerf",
+                  "go"),
+    Location = c("/pic/projects/im3/gcamusa/gcam-usa-im3/output/database_rcp85cooler_ssp3_rcp85gdp",
+                 "/pic/projects/im3/gcamusa/gcam-usa-im3/output/database_rcp85cooler_ssp5",
+                 "/pic/projects/im3/gcamusa/gcam-usa-im3/output/database_rcp85hotter_ssp3_rcp85gdp",
+                 "/pic/projects/im3/gcamusa/gcam-usa-im3/output/database_rcp85hotter_ssp5",
+                 "/pic/projects/im3/gcamusa/gcam-usa-im3/output/database_rcp45cooler_ssp3",
+                 "/pic/projects/im3/gcamusa/gcam-usa-im3/output/database_rcp45cooler_ssp5",
+                 "/pic/projects/im3/gcamusa/gcam-usa-im3/output/database_rcp45hotter_ssp3",
+                 "/pic/projects/im3/gcamusa/gcam-usa-im3/output/database_rcp45hotter_ssp5",
+                 "/pic/projects/im3/gcamusa/diagnostics/outputs_im3",
+                 "/pic/projects/im3/gcamusa/diagnostics/outputs_CERF/dataGCAM_cerf.csv",
+                 "/pic/projects/im3/gcamusa/diagnostics/outputs_GO/dataGCAM_go.csv")
+    ) %>% 
+  kbl() %>%
+  kable_styling(bootstrap_options = c("bordered","striped", "hover", "condensed", "responsive")) %>%
+  row_spec(0, background = "#2A2A2A", color = "white")
+
+```
+

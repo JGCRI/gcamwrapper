@@ -1,0 +1,19 @@
+navbar:
+  title: "gcamwrapper"
+  left:
+    - icon: fa-home
+      href: index.html
+    - text: "User Guide"
+      icon: fas fa-book
+      href: userguide.html
+  right:
+    - icon: fas fa-quote-left
+      text: Citation
+      href: CITATION.html
+    - icon: fab fa-github
+      href: https://github.com/JGCRI/gcamwrapper
+
+output:
+  html_document:
+    theme: cosmo
+    css: "style.css"
