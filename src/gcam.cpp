@@ -358,7 +358,9 @@ BOOST_PYTHON_MODULE(gcam_module) {
     boost::python::numpy::initialize();
     class_<gcam>("gcam", init<string, string>())
 
-        .def("run_to_period",        &gcam::runToPeriod,         "run to model period")
+        .def("run_period",        &gcam::runPeriod,         "run to model period")
+        .def("run_period_pre",        &gcam::runPeriodPre,         "run to model period pre solve")
+        .def("run_period_post",        &gcam::runPeriodPost,         "run to model period solve and post")
         .def("set_data", &gcam::setData, "set data")
         .def("get_data", &gcam::getData, "get data")
         .def("create_solution_debugger", &gcam::createSolutionDebugger, "create solution debugger")
@@ -366,6 +368,8 @@ BOOST_PYTHON_MODULE(gcam_module) {
         .def("convert_period_to_year", &gcam::convertPeriodToYear, "convert a GCAM model period to year")
         .def("convert_year_to_period", &gcam::convertYearToPeriod, "convert a GCAM model year to model period")
         .def("print_xmldb", &gcam::printXMLDB, "write the full XML Database results")
+        .def("set_scenario_name", &gcam::setScenarioName, "set scenario name")
+        .def("get_scenario_name", &gcam::getScenarioName, "get scenario name")
         ;
     to_python_converter<Interp::NumericVector, Interp::vec_to_python<Interp::NumericVector> >();
     to_python_converter<Interp::StringVector, Interp::vec_to_python<Interp::StringVector> >();
@@ -385,6 +389,7 @@ BOOST_PYTHON_MODULE(gcam_module) {
   .def("calc_derivative", &SolutionDebugger::calcDerivative, "calcDerivative")
   .def("get_slope", &SolutionDebugger::getSlope, "getSlope")
   .def("set_slope", &SolutionDebugger::setSlope_wrap, "setSlope")
+  .def("reset_scales", &SolutionDebugger::resetScales, "resetScales")
   ;
 }
 #endif

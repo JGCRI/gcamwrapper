@@ -10,7 +10,7 @@ class Gcam(gcam_module.gcam):
        instance.
     """
 
-    def run_to_period(self, period=None):
+    def run_period(self, period=None, post_init_calback=None):
         """ Run GCAM up to and including some model period.
             Model periods which have already been run will be kept track
             of and will not be run again.  HOWEVER, we do not attempt to
@@ -25,7 +25,18 @@ class Gcam(gcam_module.gcam):
 
         if period is None:
             period = self.get_current_period() + 1
-        super(Gcam, self).run_to_period(period)
+
+        if post_init_calback is None:
+           # if we are not running a call back function just do the whole thing together
+           # which will generate less confusing log messages
+           super(Gcam, self).run_period(period)
+        else:
+           # otherwise we will need to partition the calls
+           # if we are not already at period the log messages may be confusing as it will
+           # show as running period-1 then a seperate running period
+           super(Gcam, self).run_period_pre(period)
+           post_init_calback(self)
+           super(Gcam, self).run_period_post(period)
 
     def get_data(self, query, *args, **kwargs):
         """Queries for arbitrary data from a running instance of GCAM.
@@ -143,14 +154,20 @@ class Gcam(gcam_module.gcam):
         else:
             return list(map(lambda x: self.convert_year_to_period(x), year))
 
-    def print_xmldb(self):
+    def print_xmldb(self, xmldb_location = ""):
         """Write the full results to an XML Database
            At the moment all of the options governing XML Database output are
            locked into the values set in the `configuration` as well as the
            `XMLDBDriver.properties` file.
         """
 
-        super(Gcam, self).print_xmldb()
+        return super(Gcam, self).print_xmldb(xmldb_location)
+
+    def get_scenario_name(self):
+        return super(Gcam, self).get_scenario_name()
+
+    def set_scenario_name(self, name):
+        super(Gcam, self).set_scenario_name(name)
 
 
     def create_solution_debugger(self, period=None, market_filter="solvable"):
