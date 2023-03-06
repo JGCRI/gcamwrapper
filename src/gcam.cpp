@@ -16,6 +16,9 @@
 #include "util/base/include/manage_state_variables.hpp"
 #include "util/base/include/time_vector.h"
 #include "reporting/include/xml_db_outputter.h"
+#include "containers/include/imodel_feedback_calc.h"
+#include "marketplace/include/marketplace.h"
+#include "containers/include/world.h"
 
 #include <boost/filesystem/operations.hpp>
 
@@ -31,7 +34,7 @@ Scenario* scenario;
 
 class gcam {
     public:
-        gcam(string aConfiguration, string aWorkDir):isInitialized(false), mCurrentPeriod(0) {
+        gcam(string aConfiguration, string aWorkDir):isInitialized(false), mCurrentPeriod(0), mIsMidPeriod(false) {
             mCoutOrig = cout.rdbuf(Interp::getInterpCout().rdbuf());
             try {
                 boost::filesystem::current_path(boost::filesystem::path(aWorkDir));
@@ -52,18 +55,100 @@ class gcam {
             cout.rdbuf(mCoutOrig);
         }
 
-        void runToPeriod(const int aPeriod ) {
+        void runPeriod(const int aPeriod ) {
+          if(!isInitialized) {
+            Interp::stop("GCAM did not successfully initialize.");
+          }
+          Timer timer;
+
+          bool success = runner->runScenarios(aPeriod, false, timer);
+          if(!success) {
+            Interp::warning("Failed to solve period "+util::toString(aPeriod));
+          }
+          mCurrentPeriod = aPeriod;
+        }
+
+        void runPeriodPre(const int aPeriod ) {
             if(!isInitialized) {
                 Interp::stop("GCAM did not successfully initialize.");
             }
             Timer timer;
 
-            bool success = runner->runScenarios(aPeriod, false, timer);
-            mCurrentPeriod = aPeriod;
-            if(!success) {
-              Interp::warning("Failed to solve period "+util::toString(aPeriod));
+            if(aPeriod > 0 && (mCurrentPeriod+1) < aPeriod) {
+              bool success = runner->runScenarios(aPeriod-1, false, timer);
+              if(!success) {
+                Interp::warning("Failed to solve period "+util::toString(aPeriod));
+              }
             }
+            mCurrentPeriod = aPeriod;
+
+            scenario->logPeriodBeginning( aPeriod );
+
+    // If this is period 0 initialize market price.
+    if( aPeriod == 0 ){
+        scenario->mMarketplace->initPrices(); // initialize prices
+    }
+
+    // Run the iteration of the model.
+    scenario->mMarketplace->nullSuppliesAndDemands( aPeriod ); // initialize market demand to null
+    scenario->mMarketplace->init_to_last( aPeriod ); // initialize to last period's info
+    scenario->mWorld->initCalc( aPeriod ); // call to initialize anything that won't change during calc
+    scenario->mMarketplace->assignMarketSerialNumbers( aPeriod ); // give the markets their serial numbers for this period.
+
+    // Call any model feedback objects before we begin solving this period but after
+    // we are initialized and ready to go.
+    for( auto modelFeedback : scenario->mModelFeedbacks ) {
+        modelFeedback->calcFeedbacksBeforePeriod( scenario, scenario->mWorld->getClimateModel(), aPeriod );
+    }
+
+    // Set up the state data for the current period.
+    delete scenario->mManageStateVars;
+    scenario->mManageStateVars = new ManageStateVariables( aPeriod );
+
+    // Be sure to clear out any supplies and demands in the marketplace before making our
+    // initial call to world.calc.  There may already be values in there if for instance
+    // they got set from a restart file.
+    scenario->mMarketplace->nullSuppliesAndDemands( aPeriod );
+
+    scenario->mWorld->calc( aPeriod ); // call to calculate initial supply and demand
+    mIsMidPeriod = true;
         }
+
+      void runPeriodPost(const int aPeriod) {
+          bool success = scenario->solve( aPeriod ); // solution uses Bisect and NR routine to clear markets
+
+    scenario->mWorld->postCalc( aPeriod );
+
+    // Mark that the period is now valid.
+    scenario->mIsValidPeriod[ aPeriod ] = true;
+
+    // Run the climate model for this period (only if the solver is successful)
+    if( !success ) {
+        ILogger& climatelog = ILogger::getLogger( "climate-log" );
+        climatelog.setLevel( ILogger::WARNING );
+        climatelog << "Solver unsuccessful for period " << aPeriod << "." << endl;
+    }
+    scenario->mWorld->runClimateModel( aPeriod );
+
+    // Call any model feedbacks now that we are done solving the current period and
+    // the climate model has been run.
+    for( auto modelFeedback : scenario->mModelFeedbacks ) {
+        modelFeedback->calcFeedbacksAfterPeriod( scenario, scenario->mWorld->getClimateModel(), aPeriod );
+    }
+
+    scenario->logPeriodEnding( aPeriod );
+
+    // Write out the results for debugging.
+    /*
+    if( aPrintDebugging ){
+        scenario->writeDebuggingFiles( aXMLDebugFile, aTabs, aPeriod );
+    }
+    */
+
+    delete scenario->mManageStateVars;
+    scenario->mManageStateVars = 0;
+    mIsMidPeriod = false;
+      }
       void setData(const Interp::DataFrame& aData, const std::string& aHeader) {
         if(!isInitialized) {
           Interp::stop("GCAM did not successfully initialize.");
@@ -80,9 +165,15 @@ class gcam {
       }
 
       SolutionDebugger createSolutionDebugger(const int aPeriod, const std::string& aMarketFilterStr) {
-        delete scenario->mManageStateVars;
-        scenario->mManageStateVars = new ManageStateVariables(aPeriod);
-        return SolutionDebugger::createInstance(aPeriod, aMarketFilterStr);
+          int period = aPeriod;
+        if(!mIsMidPeriod) {
+            delete scenario->mManageStateVars;
+            scenario->mManageStateVars = new ManageStateVariables(aPeriod);
+        } else if(aPeriod != mCurrentPeriod) {
+            Interp::warning("Solution debugger can only be created for current period "+util::toString(mCurrentPeriod)+" when running feedbacks.");
+            period = mCurrentPeriod;
+        }
+        return SolutionDebugger::createInstance(period, aMarketFilterStr);
       }
 
       int getCurrentPeriod() const {
@@ -105,20 +196,50 @@ class gcam {
           return scenario->getModeltime()->getyr_to_per(aYear);
       }
 
-      void printXMLDB() const {
+      std::string printXMLDB(const std::string& aXMLDBName) const {
           if(!isInitialized) {
               Interp::stop("GCAM did not successfully initialize.");
+          }
+          const std::string XMLDB_KEY = "xmldb-location";
+          Configuration* conf = Configuration::getInstance();
+          bool origShouldWrite = conf->shouldWriteFile(XMLDB_KEY);
+          bool origAppendScnName = conf->shouldAppendScnToFile(XMLDB_KEY);
+          std::string origXMLDBName = conf->getFile(XMLDB_KEY, XMLDB_KEY, false);
+          // override the config to always write
+          conf->mShouldWriteFileMap[XMLDB_KEY] = true;
+          if(!aXMLDBName.empty()) {
+              // override the config to not adjust the XMLDB name given
+              conf->mShouldAppendScnFileMap[XMLDB_KEY] = false;
+              conf->fileMap[XMLDB_KEY] = aXMLDBName;
           }
           XMLDBOutputter xmldb;
           scenario->accept(&xmldb, -1);
           xmldb.finish();
           xmldb.finalizeAndClose();
+          if(!aXMLDBName.empty()) {
+              // reset original settings
+              conf->mShouldWriteFileMap[XMLDB_KEY] = origShouldWrite;
+              conf->mShouldAppendScnFileMap[XMLDB_KEY] = origAppendScnName;
+              conf->fileMap[XMLDB_KEY] = origXMLDBName;
+          }
+          return !aXMLDBName.empty() ? aXMLDBName :
+              origAppendScnName ? origXMLDBName.append(scenario->getName()) :
+              origXMLDBName;
+      }
+
+      std::string getScenarioName() const {
+          return scenario->getName();
+      }
+
+      void setScenarioName(const std::string& aName) {
+          scenario->setName(aName);
       }
 
     private:
         bool isInitialized;
         std::streambuf* mCoutOrig;
         int mCurrentPeriod;
+        bool mIsMidPeriod;
         LoggerFactoryWrapper loggerFactoryWrapper;
         unique_ptr<IScenarioRunner> runner;
         void initializeScenario(string configurationArg) {
@@ -199,7 +320,9 @@ RCPP_MODULE(gcam_module) {
 
         .constructor<string, string>("constructor")
 
-        .method("run_to_period",        &gcam::runToPeriod,         "run to model period")
+        .method("run_period",        &gcam::runPeriod,         "run to model period")
+        .method("run_period_pre",        &gcam::runPeriodPre,         "run to model period pre solve")
+        .method("run_period_post",        &gcam::runPeriodPost,         "run to model period solve and post")
         .method("set_data", &gcam::setData, "set data")
         .method("get_data", &gcam::getData, "get data")
         .method("create_solution_debugger", &gcam::createSolutionDebugger, "create solution debugger")
@@ -207,6 +330,8 @@ RCPP_MODULE(gcam_module) {
         .method("convert_period_to_year", &gcam::convertPeriodToYear, "convert a GCAM model period to year")
         .method("convert_year_to_period", &gcam::convertYearToPeriod, "convert a GCAM model year to model period")
         .method("print_xmldb", &gcam::printXMLDB, "write the full XML Database results")
+        .method("set_scenario_name", &gcam::setScenarioName, "set scenario name")
+        .method("get_scenario_name", &gcam::getScenarioName, "get scenario name")
         ;
 
   Rcpp::class_<SolutionDebugger>("SolutionDebugger")
@@ -223,6 +348,7 @@ RCPP_MODULE(gcam_module) {
   .method("calc_derivative", &SolutionDebugger::calcDerivative, "calcDerivative")
   .method("get_slope", &SolutionDebugger::getSlope, "getSlope")
   .method("set_slope", &SolutionDebugger::setSlope, "setSlope")
+  .method("reset_scales", &SolutionDebugger::resetScales, "resetScales")
   ;
 }
 #elif defined(IS_INTERP_PYTHON)

@@ -2,6 +2,7 @@
 #include "solution_debugger.h"
 
 #include <memory>
+#include <algorithm>
 
 #include "containers/include/world.h"
 #include "solution/util/include/solution_info.h"
@@ -199,5 +200,21 @@ void SolutionDebugger::setSlope(const NumericVector& aDX) {
     dx[i] = aDX[i];
   }
   F.setSlope(dx);
+}
+
+void SolutionDebugger::resetScales(const NumericVector& aPriceScale,
+                                   const NumericVector& aQuantityScale)
+{
+  // changing scales will invalidate F, x, and fx so we will have to recreate these
+  std::vector<SolutionInfo> smkts(solnInfoSet.getSolvableSet());
+  for(int i = 0; i < nsolv; ++i) {
+    x[i] = smkts[i].getPrice();
+    smkts[i].setForecastPrice(aPriceScale[i]);
+    smkts[i].setForecastDemand(aQuantityScale[i]);
+  }
+  LogEDFun Fnew(solnInfoSet, world, marketplace, period, false);
+  //std::swap(F, Fnew);
+  F.scaleInitInputs(x);
+  F(x, fx);
 }
 

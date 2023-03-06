@@ -57,6 +57,8 @@ public:
   }
 #endif
 
+  void resetScales(const Interp::NumericVector& aPriceScale, const Interp::NumericVector& aQuantityScale);
+
 private:
 
   World* world;
