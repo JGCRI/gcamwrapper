@@ -3,6 +3,8 @@
 
 #include <exception>
 #include <string>
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/categories.hpp>
 
 #if __has_include("Rcpp.h")
 #define IS_INTERP_R
@@ -14,8 +16,6 @@
 #include <boost/python/numpy.hpp>
 
 // use boost::iostreams to wrap Python's C API for cout
-#include <boost/iostreams/stream.hpp>
-#include <boost/iostreams/categories.hpp>
 #include <boost/format.hpp>
 #else
 #error "Could not determine, or using an unknown interpreter. Only R and Python are currently supported."
@@ -32,6 +32,25 @@ class gcam_exception : public std::exception {
 };
 
 #if defined(USING_R)
+/*!
+ * \brief Wrap Rprintf in a boost::iostreams so we can use a C++ interface.
+ * \details We couldn't just use Rcout directly because we need to add a flush
+ *          for it to show up in a notebook in a timeley manner.
+ */
+class RStdoutSink {
+public:
+  typedef char char_type;
+  typedef boost::iostreams::sink_tag category;
+
+  inline std::streamsize write(const char* aString, std::streamsize aSize) {
+    Rprintf("%.*s", aSize, aString);
+    // using R_FlushConsole() doesn't work for whatever reason
+    Rcpp::Function flush("flush.console");
+    flush();
+    return aSize;
+  }
+};
+
 namespace Interp {
     using Rcpp::stop;
     using Rcpp::warning;
@@ -42,7 +61,9 @@ namespace Interp {
     using Rcpp::NumericMatrix;
 
     inline std::ostream& getInterpCout() {
-      return Rcpp::Rcout;
+      static boost::iostreams::stream<RStdoutSink> sRCout;
+      return sRCout;
+      //return Rcpp::Rcout;
     }
 
     inline std::string extract(const Rcpp::String& aStr) {
@@ -108,6 +129,7 @@ public:
     const std::streamsize MAX_PY_SIZE = 1000;
     std::streamsize actualSize = std::min(aSize, MAX_PY_SIZE);
     PySys_WriteStdout((boost::format("%%.%1%s") % actualSize).str().c_str(), aString);
+    boost::python::call_method<void>(PySys_GetObject("stdout"), "flush");
     return actualSize;
   }
 };
