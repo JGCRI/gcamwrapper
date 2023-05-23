@@ -12,6 +12,11 @@
 #define IS_INTERP_PYTHON
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
+
+// use boost::iostreams to wrap Python's C API for cout
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/categories.hpp>
+#include <boost/format.hpp>
 #else
 #error "Could not determine, or using an unknown interpreter. Only R and Python are currently supported."
 #endif
@@ -35,6 +40,10 @@ namespace Interp {
     using Rcpp::StringVector;
     using Rcpp::IntegerVector;
     using Rcpp::NumericMatrix;
+
+    inline std::ostream& getInterpCout() {
+      return Rcpp::Rcout;
+    }
 
     inline std::string extract(const Rcpp::String& aStr) {
         return aStr;
@@ -84,6 +93,25 @@ namespace Interp {
 }
 
 #elif defined(PY_VERSION_HEX)
+
+/*!
+ * \brief Wrap PySys_WriteStdout in a boost::iostreams so we can use a C++ interface.
+ * \details This also bring us more inline with Rcpp and therefore keep a consisten abstract
+ *          Interp interface.
+ */
+class PySysStdoutSink {
+public:
+  typedef char char_type;
+  typedef boost::iostreams::sink_tag category;
+
+  inline std::streamsize write(const char* aString, std::streamsize aSize) {
+    const std::streamsize MAX_PY_SIZE = 1000;
+    std::streamsize actualSize = std::min(aSize, MAX_PY_SIZE);
+    PySys_WriteStdout((boost::format("%%.%1%s") % actualSize).str().c_str(), aString);
+    return actualSize;
+  }
+};
+
 namespace Interp {
     static void stop(const std::string& aMessage) {
         throw gcam_exception(aMessage);
@@ -93,6 +121,11 @@ namespace Interp {
     }
     namespace bp = boost::python;
     namespace bnp = boost::python::numpy;
+
+    inline std::ostream& getInterpCout() {
+      static boost::iostreams::stream<PySysStdoutSink> sPyCout;
+      return sPyCout;
+    }
 
     inline std::string extract(const bp::str& aStr) {
         return bp::extract<std::string>(aStr);

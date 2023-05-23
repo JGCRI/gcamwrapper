@@ -4,10 +4,15 @@
 \alias{print_xmldb}
 \title{Write the full results to an XML Database}
 \usage{
-print_xmldb(gcam)
+print_xmldb(gcam, xmldb_location = "")
 }
 \arguments{
 \item{gcam}{(gcam) An initialized GCAM instance}
+
+\item{xmldb_location}{(string) Override the location to write the XMLDB if non-empty}
+}
+\value{
+(string) The XMLDB location, particuarly useful if relying on defaults from the config.
 }
 \description{
 Write the full results to an XML Database
