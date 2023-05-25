@@ -47,6 +47,7 @@ wrap_get_query <- function() {
 #' @return (string) The raw query from the query file with units set as an attribute
 #' if specified.
 #' @importFrom yaml read_yaml
+#' @export
 get_query <- wrap_get_query()
 
 
