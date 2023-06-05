@@ -21,18 +21,34 @@ create_and_initialize <- function(configuration = "configuration.xml", workdir =
 #' been run will be kept track of and will not be run again.  HOWEVER,
 #' we do not attempt to keep track of if those model periods are "dirty"
 #' such as if a user has called `set_data` in such a way that would invalidate
-#' that solution.
+#' that solution.  Users can supply a call back function which will be called
+#' after initCalc and before solving.  Such a call back could be necessary if
+#' if data a user wanted to set would have been overridden during initializations.
 #' @param gcam (gcam) An initialized GCAM instance
 #' @param period (integer) The GCAM model period to run up to or the
 #" `get_current_period` + 1 if \code{NULL}
+#' @param post_init_calback (function) A call back function
+#' @param ... Additional params to pass to the callback function
 #' @return GCAM instance
 #' @importFrom Rcpp cpp_object_initializer
 #' @export
-run_to_period <- function(gcam, period = NULL) {
+run_period <- function(gcam, period = NULL, post_init_calback = NULL, ...) {
   if(is.null(period)) {
       period <- get_current_period(gcam) + 1
   }
-  gcam$run_to_period(period)
+
+  if(is.null(post_init_calback)) {
+    # if we are not running a call back function just do the whole thing together
+    # which will generate less confusing log messages
+    gcam$run_period(period)
+  } else {
+    # otherwise we will need to partition the calls
+    # if we are not already at period the log messages may be confusing as it will
+    # show as running period-1 then a seperate running period
+    gcam$run_period_pre(period)
+    post_init_calback(gcam, ...)
+    gcam$run_period_post(period)
+  }
 
   invisible(gcam)
 }
@@ -120,10 +136,10 @@ convert_period_to_year <- function(gcam, period) {
     ret
 }
 
-#' Convert from a GCAM model year to model period 
+#' Convert from a GCAM model year to model period
 #' @param gcam (gcam) An initialized GCAM instance
 #' @param year (integer vector) The model year to convert to period
-#' @return (integer vector) The corresponding model period 
+#' @return (integer vector) The corresponding model period
 #' @export
 convert_year_to_period <- function(gcam, year) {
     if(length(year) == 0) {
@@ -139,6 +155,34 @@ convert_year_to_period <- function(gcam, year) {
     ret
 }
 
+#' Write the full results to an XML Database
+#' @details At the moment all of the options governing XML Database output are
+#' locked into the values set in the \code{configuration} as well as the
+#' \code{XMLDBDriver.properties} file.
+#' @param gcam (gcam) An initialized GCAM instance
+#' @param xmldb_location (string) Override the location to write the XMLDB if non-empty
+#' @return (string) The XMLDB location, particuarly useful if relying on defaults from the config.
+#' @export
+print_xmldb <- function(gcam, xmldb_location = "") {
+  gcam$print_xmldb(xmldb_location)
+}
+
+#' Get the scenario name
+#' @param gcam (gcam) An initialized GCAM instance
+#' @return (string) The name of the scenario
+#' @export
+get_scenario_name <- function(gcam) {
+  gcam$get_scenario_name()
+}
+
+#' Set the scenario name
+#' @param gcam (gcam) An initialized GCAM instance
+#' @param name (string) The name of the scenario to set
+#' @export
+set_scenario_name <- function(gcam, name) {
+  gcam$set_scenario_name(name)
+}
+
 #' Create a solution debugging object
 #' @details Create a solution debugging object which can be used a single
 #' evaluation of the model and see how it affects prices, supplies,
@@ -146,13 +190,15 @@ convert_year_to_period <- function(gcam, year) {
 #' @param gcam (gcam) An initialized GCAM instance
 #' @param period (integer) GCAM model period to create the debugger or if NULL
 #' use the last run model period.
+#' @param market_filter (string) A \code{<solution-info-filter>} string in the same
+#' format as in the solver config XML.  The default is "solvable".
 #' @return A SolutionDebugger object
 #' @export
-create_solution_debugger <- function(gcam, period = NULL) {
+create_solution_debugger <- function(gcam, period = NULL, market_filter = "solvable") {
   if(is.null(period)) {
       period <- get_current_period(gcam)
   }
-  gcam$create_solution_debugger(period)
+  gcam$create_solution_debugger(period, market_filter)
 }
 
 #' Gets the prices

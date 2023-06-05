@@ -222,7 +222,7 @@ template<>
 void GetDataHelper::processData(std::map<unsigned int, double>& aData) {
   // the user did not explicitly specify a year filter for this data but
   // it seems better to assume they did rather than implicitly aggregate
-  // accross model periods
+  // across model periods
   // so let's add the path tracking filter to record all years the first
   // time we see this for them
   if(!mHasYearInPath) {
@@ -233,7 +233,7 @@ void GetDataHelper::processData(std::map<unsigned int, double>& aData) {
     // update the year path tracker which would not have had to match thus far
     // as an ARRAY is not a CONTAINER
     (*mPathTracker.rbegin())->matchesInt(GetIndexAsYear::convertIterToYear(aData, iter));
-    // deletegate to processData to take care of the rest
+    // delegate to processData to take care of the rest
     processData((*iter).second);
   }
 }
@@ -241,7 +241,7 @@ template<typename VecType>
 void GetDataHelper::vectorDataHelper(VecType& aDataVec) {
   // the user did not explicitly specify a year filter for this data but
   // it seems better to assume they did rather than implicitly aggregate
-  // accross model periods
+  // across model periods
   // so let's add the path tracking filter to record all years the first
   // time we see this for them
   if(!mHasYearInPath) {
@@ -252,7 +252,7 @@ void GetDataHelper::vectorDataHelper(VecType& aDataVec) {
     // update the year path tracker which would not have had to match thus far
     // as an ARRAY is not a CONTAINER
     (*mPathTracker.rbegin())->matchesInt(GetIndexAsYear::convertIterToYear(aDataVec, iter));
-    // deletegate to processData to take care of the rest
+    // delegate to processData to take care of the rest
     processData(*iter);
   }
 }
