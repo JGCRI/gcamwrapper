@@ -61,6 +61,11 @@ class gcam {
           }
           Timer timer;
 
+          // we need to set the stop period to ensure Hector does not attempt to
+          // run past the current period and then generate superfluous errors
+          const string STOP_PERIOD_KEY = "stop-period";
+          Configuration* conf = Configuration::getInstance();
+          conf->intMap[STOP_PERIOD_KEY] = aPeriod;
           bool success = runner->runScenarios(aPeriod, false, timer);
           if(!success) {
             Interp::warning("Failed to solve period "+util::toString(aPeriod));

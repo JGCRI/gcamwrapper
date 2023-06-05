@@ -1,5 +1,5 @@
 
-CXX_STD = CXX14
+CXX_STD = CXX17
 
 #GCAM_INCLUDE = /gcam/cvs/objects
 #GCAM_LIB = /gcam/cvs/objects/build/linux
