@@ -21,7 +21,7 @@ export CXX=g++ -fPIC
 
 To create a static library you can run the following command:
 ```bash
-ar -ru libgcam.a exe/objects.build/Release/objects.build/Objects-normal/x86_64/*o
+ar -ru libgcam.a exe/build/objects.build/Release/objects.build/Objects-normal/x86_64/*o
 ```
 
 And for the sake of consistency with `Makefile` move them and libhector into:
@@ -139,7 +139,7 @@ run_to_period(g, 5L)
 
 # To ease the burden on users to write queries, we include a query library which is specified
 # in `inst/extdata/query_library.yml` and can be accessed with the `get_query` utility:
-co2_query <- get_query("emissions", "co2_emissions")
+co2_query <- get_query("emissions", "co2_emissions_agg")
 # which returns: world/region{region@name}//ghg[NamedFilter,StringEquals,CO2]/emissions{year@year}
 # But note the filters on region and emissions year are just place holders.  To simplify this
 # aspect as well we allow users to specify query parameters using a short hand notation provided
@@ -304,12 +304,12 @@ g.run_to_period(5)
 
 # To ease the burden on users to write queries, we include a query library which is specified
 # in `inst/extdata/query_library.yml` and can be accessed with the `get_query` utility:
-co2_query = gcamwrapper.get_query("emissions", "co2_emissions")
+co2_query = gcamwrapper.get_query("emissions", "co2_emissions_agg")
 # which returns: world/region{region@name}//ghg[NamedFilter,StringEquals,CO2]/emissions{year@year}
 # But note the filters on region and emissions year are just place holders.  To simplify this
 # aspect as well we allow users to specify query parameters using a short hand notation provided
 # as a dict:
-query_params = dict(
+query_params = {
     "region": # The key is the place holder "tag"
         ["=", "USA"], # The value is an array with the first value an operator and the second the
                        # RHS operand.  Note for get_data the "+" is implied but could be added explicitly
@@ -318,7 +318,7 @@ query_params = dict(
                        # The available operators include:
                        # For strings (@name): "*" (any) "="  or "=~" (regular expression matches)
                        # For ints (@year): "*" (any), "=", "<", "<=", ">", ">="
-    "year": ["=", 2020])
+    "year": ["=", 2020]}
 # The placeholders will then get transformed into:
 # "world/region[+NamedFilter,MatchesAny]//ghg[+NamedFilter,StringEquals,CO2]/emissions[+YearFilter,IntEquals,2020]")
 # We can then pass the query and query_params and retrieve the results in a DataFrame.

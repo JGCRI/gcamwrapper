@@ -1,6 +1,7 @@
 import gcam_module
 from pandas import DataFrame, Series
 from gcamwrapper.query_library import apply_query_params
+import numpy as np
 import warnings
 
 
@@ -107,7 +108,12 @@ class Gcam(gcam_module.gcam):
         # name key maps to the column as a numpy array
         data_dict = dict()
         for key, value in data_df.items():
-            data_dict[key] = value.to_numpy()
+            data_as_numpy = value.to_numpy()
+            if data_as_numpy.dtype == np.int64:
+                data_as_numpy = data_as_numpy.astype(np.int32)
+                if key != "year" and key != "period":
+                    warnings.warn(f"Implict conversion to int32 for {key} may result in loss of data")
+            data_dict[key] = data_as_numpy
         super(Gcam, self).set_data(data_dict, query)
 
     def get_current_period(self):
