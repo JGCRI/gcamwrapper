@@ -193,7 +193,7 @@ namespace Interp {
     using DataFrame = bp::dict;
     using NumericVector = NumpyVecWrapper<double>;
     using StringVector = NumpyVecWrapper<bp::str>;
-    using IntegerVector = NumpyVecWrapper<size_t>;
+    using IntegerVector = NumpyVecWrapper<int>;
     using NumericMatrix = bnp::ndarray;
 
     inline DataFrame createDataFrame() {

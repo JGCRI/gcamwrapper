@@ -12,7 +12,8 @@ loadModule("gcam_module", TRUE)
 #' @return GCAM instance
 #' @export
 create_and_initialize <- function(configuration = "configuration.xml", workdir = ".") {
-  new(gcam, configuration, workdir)
+  setwd(workdir)
+  new(gcam, configuration)
 }
 
 #' Run model period

@@ -20,8 +20,6 @@
 #include "marketplace/include/marketplace.h"
 #include "containers/include/world.h"
 
-#include <boost/filesystem/operations.hpp>
-
 #include "set_data_helper.h"
 #include "get_data_helper.h"
 #include "solution_debugger.h"
@@ -34,13 +32,8 @@ Scenario* scenario;
 
 class gcam {
     public:
-        gcam(string aConfiguration, string aWorkDir):isInitialized(false), mCurrentPeriod(0), mIsMidPeriod(false) {
+        gcam(string aConfiguration):isInitialized(false), mCurrentPeriod(0), mIsMidPeriod(false) {
             mCoutOrig = cout.rdbuf(Interp::getInterpCout().rdbuf());
-            try {
-                boost::filesystem::current_path(boost::filesystem::path(aWorkDir));
-            } catch(...) {
-                Interp::stop("Could not set working directory to: "+aWorkDir);
-            }
             initializeScenario(aConfiguration);
         }
         gcam(const gcam& aOther):isInitialized(aOther.isInitialized) {
@@ -61,6 +54,11 @@ class gcam {
           }
           Timer timer;
 
+          // we need to set the stop period to ensure Hector does not attempt to
+          // run past the current period and then generate superfluous errors
+          const string STOP_PERIOD_KEY = "stop-period";
+          Configuration* conf = Configuration::getInstance();
+          conf->intMap[STOP_PERIOD_KEY] = aPeriod;
           bool success = runner->runScenarios(aPeriod, false, timer);
           if(!success) {
             Interp::warning("Failed to solve period "+util::toString(aPeriod));
@@ -318,7 +316,7 @@ RCPP_EXPOSED_CLASS_NODECL(SolutionDebugger)
 RCPP_MODULE(gcam_module) {
     Rcpp::class_<gcam>("gcam")
 
-        .constructor<string, string>("constructor")
+        .constructor<string>("constructor")
 
         .method("run_period",        &gcam::runPeriod,         "run to model period")
         .method("run_period_pre",        &gcam::runPeriodPre,         "run to model period pre solve")
@@ -356,7 +354,7 @@ using namespace boost::python;
 
 BOOST_PYTHON_MODULE(gcam_module) {
     boost::python::numpy::initialize();
-    class_<gcam>("gcam", init<string, string>())
+    class_<gcam>("gcam", init<string>())
 
         .def("run_period",        &gcam::runPeriod,         "run to model period")
         .def("run_period_pre",        &gcam::runPeriodPre,         "run to model period pre solve")
