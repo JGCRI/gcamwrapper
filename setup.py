@@ -33,7 +33,6 @@ if platform.system() == "Windows" :
     # so do not include any of them
     gcam_compile_args = []
 else :
-    gcam_libs += ['boost_system', 'boost_filesystem']
     # boost appends the python version to the boost python library name
     py_version_suffix = ''.join(platform.python_version_tuple()[0:2])
     gcam_libs += [lib + py_version_suffix for lib in ['boost_python', 'boost_numpy']]

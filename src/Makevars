@@ -4,7 +4,6 @@ CXX_STD = CXX17
 #GCAM_INCLUDE = /gcam/cvs/objects
 #GCAM_LIB = /gcam/cvs/objects/build/linux
 #BOOST_INCLUDE=/usr/include
-#BOOST_LIB=/usr/lib
 #TBB_INCLUDE=/usr/include
 #TBB_LIB=/usr/lib/x86_64-linux-gnu
 #EIGEN_INCLUDE=/usr/include
@@ -16,5 +15,5 @@ CXX_STD = CXX17
 OSNAME_LOWERCASE := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 PKG_CPPFLAGS = -I../inst/include/ -I$(GCAM_INCLUDE) -I$(BOOST_INCLUDE) -I$(JAVA_INCLUDE) -I$(JAVA_INCLUDE)/$(OSNAME_LOWERCASE) -I$(TBB_INCLUDE) -I$(EIGEN_INCLUDE) -DNDEBUG
 
-PKG_LIBS = -Wl,-rpath,$(JAVA_LIB) -lgcam  -L/usr/local/lib -L$(GCAM_LIB) -L$(JAVA_LIB) -ljvm -L$(BOOST_LIB) -Wl,-rpath,$(BOOST_LIB) -L$(TBB_LIB) -Wl,-rpath,$(TBB_LIB) -lhector -lboost_system -lboost_filesystem -ltbb -ltbbmalloc -ltbbmalloc_proxy  -lm
+PKG_LIBS = -Wl,-rpath,$(JAVA_LIB) -lgcam  -L/usr/local/lib -L$(GCAM_LIB) -L$(JAVA_LIB) -ljvm -L$(TBB_LIB) -Wl,-rpath,$(TBB_LIB) -lhector -ltbb -ltbbmalloc -ltbbmalloc_proxy  -lm
 
