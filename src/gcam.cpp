@@ -34,14 +34,11 @@ Scenario* scenario;
 
 class gcam {
     public:
-        gcam(string aConfiguration, string aWorkDir):isInitialized(false), mCurrentPeriod(0), mIsMidPeriod(false) {
-            mCoutOrig = cout.rdbuf(Interp::getInterpCout().rdbuf());
-            try {
-                boost::filesystem::current_path(boost::filesystem::path(aWorkDir));
-            } catch(...) {
-                Interp::stop("Could not set working directory to: "+aWorkDir);
-            }
+        gcam(string aConfiguration):isInitialized(false), mCurrentPeriod(0), mIsMidPeriod(false) {
+        	Py_BEGIN_ALLOW_THREADS
+        	//mCoutOrig = cout.rdbuf(Interp::getInterpCout().rdbuf());
             initializeScenario(aConfiguration);
+            Py_END_ALLOW_THREADS
         }
         gcam(const gcam& aOther):isInitialized(aOther.isInitialized) {
             Interp::stop("TODO: not sure copying is safe");
@@ -52,20 +49,25 @@ class gcam {
             runner.reset(0);
             scenario = 0;
             Configuration::reset();
-            cout.rdbuf(mCoutOrig);
+            //  cout.rdbuf(mCoutOrig);
         }
 
         void runPeriod(const int aPeriod ) {
+        	Py_BEGIN_ALLOW_THREADS
           if(!isInitialized) {
             Interp::stop("GCAM did not successfully initialize.");
           }
           Timer timer;
+          const string STOP_PERIOD_KEY = "stop-period";
+          Configuration* conf = Configuration::getInstance();
+          conf->intMap[STOP_PERIOD_KEY] = aPeriod;
 
           bool success = runner->runScenarios(aPeriod, false, timer);
           if(!success) {
             Interp::warning("Failed to solve period "+util::toString(aPeriod));
           }
           mCurrentPeriod = aPeriod;
+          Py_END_ALLOW_THREADS
         }
 
         void runPeriodPre(const int aPeriod ) {
@@ -197,14 +199,17 @@ class gcam {
       }
 
       std::string printXMLDB(const std::string& aXMLDBName) const {
-          if(!isInitialized) {
+    	  std::string origXMLDBName;
+    	  bool origAppendScnName;
+    	  Py_BEGIN_ALLOW_THREADS
+    	  if(!isInitialized) {
               Interp::stop("GCAM did not successfully initialize.");
           }
           const std::string XMLDB_KEY = "xmldb-location";
           Configuration* conf = Configuration::getInstance();
           bool origShouldWrite = conf->shouldWriteFile(XMLDB_KEY);
-          bool origAppendScnName = conf->shouldAppendScnToFile(XMLDB_KEY);
-          std::string origXMLDBName = conf->getFile(XMLDB_KEY, XMLDB_KEY, false);
+          origAppendScnName = conf->shouldAppendScnToFile(XMLDB_KEY);
+          origXMLDBName = conf->getFile(XMLDB_KEY, XMLDB_KEY, false);
           // override the config to always write
           conf->mShouldWriteFileMap[XMLDB_KEY] = true;
           if(!aXMLDBName.empty()) {
@@ -222,6 +227,7 @@ class gcam {
               conf->mShouldAppendScnFileMap[XMLDB_KEY] = origAppendScnName;
               conf->fileMap[XMLDB_KEY] = origXMLDBName;
           }
+          Py_END_ALLOW_THREADS
           return !aXMLDBName.empty() ? aXMLDBName :
               origAppendScnName ? origXMLDBName.append(scenario->getName()) :
               origXMLDBName;
@@ -318,7 +324,7 @@ RCPP_EXPOSED_CLASS_NODECL(SolutionDebugger)
 RCPP_MODULE(gcam_module) {
     Rcpp::class_<gcam>("gcam")
 
-        .constructor<string, string>("constructor")
+        .constructor<string>("constructor")
 
         .method("run_period",        &gcam::runPeriod,         "run to model period")
         .method("run_period_pre",        &gcam::runPeriodPre,         "run to model period pre solve")
@@ -356,7 +362,7 @@ using namespace boost::python;
 
 BOOST_PYTHON_MODULE(gcam_module) {
     boost::python::numpy::initialize();
-    class_<gcam>("gcam", init<string, string>())
+    class_<gcam>("gcam", init<string>())
 
         .def("run_period",        &gcam::runPeriod,         "run to model period")
         .def("run_period_pre",        &gcam::runPeriodPre,         "run to model period pre solve")

@@ -1,6 +1,7 @@
 import gcam_module
 from pandas import DataFrame, Series
 from gcamwrapper.query_library import apply_query_params
+from os import chdir
 import warnings
 
 
@@ -9,6 +10,20 @@ class Gcam(gcam_module.gcam):
        GCAMFusion capabilities to get/set arbitrary data from a running
        instance.
     """
+
+    def __init__(self, configuration="configuration.xml", workdir="."):
+        """ Create GCAM instance
+
+        :param configuration: The configuration XML to use.
+        :type configuration: str
+        :param workdir: The working directory to use which may be important if the paths
+                        in `configuration` are relative.
+        :type workdir: str
+        """
+
+        chdir(workdir)
+        super(Gcam, self).__init__(configuration)
+
 
     def run_period(self, period=None, post_init_calback=None):
         """ Run GCAM up to and including some model period.
