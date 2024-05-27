@@ -12,7 +12,10 @@ CXX_STD = CXX17
 #JAVA_INCLUDE=${JAVA_HOME}/include
 #JAVA_LIB=${JAVA_HOME}/lib/server
 
-OSNAME_LOWERCASE := $(shell uname -s | tr '[:upper:]' '[:lower:]')
+ifndef OSNAME_LOWERCASE
+  OSNAME_LOWERCASE := $(shell uname -s | tr '[:upper:]' '[:lower:]')
+endif
+
 PKG_CPPFLAGS = -I../inst/include/ -I$(GCAM_INCLUDE) -I$(BOOST_INCLUDE) -I$(JAVA_INCLUDE) -I$(JAVA_INCLUDE)/$(OSNAME_LOWERCASE) -I$(TBB_INCLUDE) -I$(EIGEN_INCLUDE) -DNDEBUG
 
 PKG_LIBS = -Wl,-rpath,$(JAVA_LIB) -lgcam  -L/usr/local/lib -L$(GCAM_LIB) -L$(JAVA_LIB) -ljvm -L$(TBB_LIB) -Wl,-rpath,$(TBB_LIB) -lhector -ltbb -ltbbmalloc -ltbbmalloc_proxy  -lm
