@@ -127,7 +127,7 @@ parse_int_query_param <- function(param_operands, is_get_data) {
     }
 
     # use default behavior if no param_operands were given
-    if(is.na(param_operands) || length(param_operands) == 0) {
+    if(any(is.na(param_operands)) || length(param_operands) == 0) {
         # for get data the default is to match any
         # for set data the default is to match =
         param_operands = ifelse(is_get_data, c('*'), c('='))
@@ -190,7 +190,7 @@ parse_str_query_param <- function(param_operands, is_get_data) {
     }
 
     # use default behavior if no param_operands were given
-    if(is.na(param_operands) || length(param_operands) == 0) {
+    if(any(is.na(param_operands)) || length(param_operands) == 0) {
         # for get data the default is to match any
         # for set data the default is to match =
         param_operands = ifelse(is_get_data, c('*'), c('='))

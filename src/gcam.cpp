@@ -32,10 +32,17 @@ using namespace std;
 // Declared outside Main to make global.
 Scenario* scenario;
 
+Interp::DataFrame run_disp_unsec(Scenario* aScenario,
+                                 const int aPeriod,
+                                 const Interp::DataFrame& aLDCData,
+                         const Interp::DataFrame& aPVData,
+                         const Interp::DataFrame& aWindData,
+                         const Interp::DataFrame& aWindOffData);
+
 class gcam {
     public:
         gcam(string aConfiguration, string aWorkDir):isInitialized(false), mCurrentPeriod(0), mIsMidPeriod(false) {
-            mCoutOrig = cout.rdbuf(Interp::getInterpCout().rdbuf());
+            //mCoutOrig = cout.rdbuf(Interp::getInterpCout().rdbuf());
             try {
                 boost::filesystem::current_path(boost::filesystem::path(aWorkDir));
             } catch(...) {
@@ -52,7 +59,7 @@ class gcam {
             runner.reset(0);
             scenario = 0;
             Configuration::reset();
-            cout.rdbuf(mCoutOrig);
+            //cout.rdbuf(mCoutOrig);
         }
 
         void runPeriod(const int aPeriod ) {
@@ -162,6 +169,15 @@ class gcam {
         }
         GetDataHelper helper(aHeader);
         return helper.run(runner->getInternalScenario());
+      }
+      Interp::DataFrame runUnc(const Interp::DataFrame& aLDCData,
+                                const Interp::DataFrame& aPVData,
+                                const Interp::DataFrame& aWindData,
+                                const Interp::DataFrame& aWindOffData) {
+        if(!isInitialized) {
+          Interp::stop("GCAM did not successfully initialize.");
+        }
+        return run_disp_unsec(scenario, mCurrentPeriod, aLDCData, aPVData, aWindData, aWindOffData);
       }
 
       SolutionDebugger createSolutionDebugger(const int aPeriod, const std::string& aMarketFilterStr) {
@@ -325,6 +341,7 @@ RCPP_MODULE(gcam_module) {
         .method("run_period_post",        &gcam::runPeriodPost,         "run to model period solve and post")
         .method("set_data", &gcam::setData, "set data")
         .method("get_data", &gcam::getData, "get data")
+        .method("run_unc", &gcam::runUnc, "run_unc")
         .method("create_solution_debugger", &gcam::createSolutionDebugger, "create solution debugger")
         .method("get_current_period", &gcam::getCurrentPeriod, "get the last run model period")
         .method("convert_period_to_year", &gcam::convertPeriodToYear, "convert a GCAM model period to year")

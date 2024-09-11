@@ -179,3 +179,121 @@ void SetDataHelper::processData(T& aData) {
   Interp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
 }
 
+struct GrHelper {
+  const int mPeriod;
+  const std::string mGRName;
+  const Rcpp::IntegerVector iterVec;
+  const Rcpp::List ldc_iter_data;
+  const Rcpp::List pv_iter_data;
+  const Rcpp::List wind_iter_data;
+  const Rcpp::List wind_off_iter_data;
+
+  Rcpp::DataFrame out;
+  GrHelper(const int aPeriod,
+           const std::string aGRName,
+           const Interp::DataFrame aLDCData,
+           const Interp::DataFrame aPVData,
+           const Interp::DataFrame aWindData,
+           const Interp::DataFrame aWindOffData):mPeriod(aPeriod),
+           mGRName(aGRName),
+           iterVec(aLDCData[0]),
+           ldc_iter_data(aLDCData[1]),
+           pv_iter_data(aPVData[1]),
+           wind_iter_data(aWindData[1]),
+           wind_off_iter_data(aWindOffData[1]) {}
+  template<typename T>
+  void processData(T& aData) {
+    Interp::stop(string("Search found unexpected type: ")+string(typeid(T).name()));
+  }
+  TechSegCFType repackCFData(const Rcpp::DataFrame aIterDF) {
+    Rcpp::StringVector state = aIterDF[0];
+    Rcpp::List stateNest = aIterDF[1];
+    TechSegCFType ret;
+    for(int rowState = 0; rowState < aIterDF.nrows(); ++rowState) {
+      Rcpp::DataFrame stateData = static_cast<Rcpp::DataFrame>(stateNest[rowState]);
+      Rcpp::StringVector seg = stateData[0];
+      Rcpp::NumericVector value = stateData[1];
+      std::list<std::pair<std::string, double> > segMapTemp;
+      for(int row = 0; row < stateData.nrows(); ++row) {
+        segMapTemp.push_back(std::make_pair(static_cast<std::string>(seg[row]), value[row]));
+      }
+      ret[static_cast<std::string>(state[rowState])] = segMapTemp;
+    }
+    return ret;
+  }
+  template<>
+  void processData(Sector*& aData) {
+    DispatchSector* dispSector = dynamic_cast<DispatchSector*>(aData);
+    std::list<UncData> allDataByIter;
+    const int NUM_ITER = ldc_iter_data.length();
+    for(int iter = 0; iter < NUM_ITER; ++iter) {
+      UncData currData;
+      const Interp::DataFrame& ldc_seg_data = static_cast<Interp::DataFrame>(ldc_iter_data[iter]);
+      Rcpp::StringVector seg = ldc_seg_data[0];
+      Rcpp::NumericVector value = ldc_seg_data[1];
+      for(int row = 0; row < ldc_seg_data.nrows(); ++row) {
+        currData.aNewLDC[static_cast<std::string>(seg[row])] = value[row];
+      }
+      currData.aNewPV = repackCFData(static_cast<Interp::DataFrame>(pv_iter_data[iter]));
+      currData.aNewWind = repackCFData(static_cast<Interp::DataFrame>(wind_iter_data[iter]));
+      currData.aNewOffWind = repackCFData(static_cast<Interp::DataFrame>(wind_off_iter_data[iter]));
+      allDataByIter.push_back(currData);
+    }
+
+    std::pair<std::vector<double>, std::vector<double> > expBack = dispSector->runUncertainty(allDataByIter, mPeriod);
+
+    Rcpp::StringVector grCol(NUM_ITER, mGRName);
+    out = Rcpp::DataFrame::create(Rcpp::Named("grid_region") = grCol,
+                                  Rcpp::Named("iter") = iterVec,
+                                  Rcpp::Named("price") = expBack.first,
+                                  Rcpp::Named("remain") = expBack.second);
+    /*Rcpp::StringVector grCol(NUM_ITER, mGRName);
+    out = Rcpp::DataFrame::create(Rcpp::Named("grid_region") = grCol,
+                                  Rcpp::Named("iter") = iterVec,
+                                  Rcpp::Named("price") = NumericVector::create(NUM_ITER, 0),
+                                  Rcpp::Named("remain") = NumericVector::create(NUM_ITER, 0));*/
+  }
+
+};
+
+Interp::DataFrame run_disp_unsec(Scenario* aScenario,
+                                 const int aPeriod,
+                                 const Interp::DataFrame& aLDCData,
+                                 const Interp::DataFrame& aPVData,
+                                 const Interp::DataFrame& aWindData,
+                                 const Interp::DataFrame& aWindOffData)
+{
+  cout << "In func" << endl;
+  const Rcpp::StringVector& gr_names = aLDCData[0];
+  cout << "Get names" << endl;
+  const Rcpp::List& ldc_gr_data = aLDCData[1];
+  cout << "Get ldc" << endl;
+  const Rcpp::List& pv_gr_data = aPVData[1];
+  const Rcpp::List& wind_gr_data = aWindData[1];
+  const Rcpp::List& wind_off_gr_data = aWindOffData[1];
+  int grInd = 0;
+  cout << "Before create filter steps" << endl;
+  std::vector<FilterStep*> filterSteps {
+    new FilterStep("world"),
+    new FilterStep("region", new NamedFilter(new StringVecEquals(gr_names, grInd))),
+    new FilterStep("sector", new NamedFilter(new StringEquals("electricity")))
+  };
+  cout << "Before loop" << endl;
+  Rcpp::Function rClassFn("class");
+  Rcpp::Environment dplyr_env = Rcpp::Environment::namespace_env("dplyr");
+  Rcpp::Function bind_rows = dplyr_env["bind_rows"];
+  Rcpp::List outList;
+  for(grInd = 0; grInd < aLDCData.nrows(); ++grInd) {
+    cout << "Saw: " << static_cast<std::string>(gr_names[grInd]) << endl;
+    /*std::string colClass(Rcpp::as<std::string>(rClassFn(ldc_gr_data)));
+    std::string col1Class(Rcpp::as<std::string>(rClassFn(ldc_gr_data[grInd])));
+    cout << "c1: " << colClass << " c2: " << col1Class << endl;*/
+
+    GrHelper currGr(aPeriod, static_cast<std::string>(gr_names[grInd]), static_cast<Interp::DataFrame>(ldc_gr_data[grInd]), static_cast<Interp::DataFrame>(pv_gr_data[grInd]), static_cast<Interp::DataFrame>(wind_gr_data[grInd]), static_cast<Interp::DataFrame>(wind_off_gr_data[grInd]));
+    GCAMFusion<GrHelper> fusion(currGr, filterSteps);
+    fusion.startFilter(aScenario);
+    outList.push_back(currGr.out);
+    cout << "Here " << grInd << endl;
+  }
+  return static_cast<Rcpp::DataFrame>(bind_rows(outList));
+}
