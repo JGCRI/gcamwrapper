@@ -296,6 +296,21 @@ class SolutionDebugger (gcam_module.SolutionDebugger):
         return Series(super(SolutionDebugger, self).get_quantity_scale_factor(),
                       super(SolutionDebugger, self).get_market_names())
 
+    def reset_scales(self, price_scale, quantity_scale):
+        """Reset the price and quantity scale factors.
+           Note, this may invalidate scaled prices / quantities a user may have already stored
+           and they should re-create them after calling this method.
+
+        :param price_scale:  A new vector of price scalers to set.
+        :type price_scale: Series
+        :param quantity_scale:  A new vector of quantity scalers to set.
+        :type quantity_scale: Series
+
+        """
+
+        super(SolutionDebugger, self).reset_scales(price_scale.to_numpy(), quantity_scale.to_numpy())
+
+
     def set_prices(self, prices, scaled):
         """Sets a Series of prices into the model but does not immediately evaluate them.
 

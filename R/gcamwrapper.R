@@ -268,6 +268,17 @@ get_quantity_scale_factor <- function(sd) {
   sd$get_quantity_scale_factor()
 }
 
+#' Reset the price and quantity scale factors
+#' @details Note, this may invalidate scaled prices / quantities a user may have already stored
+#' and they should re-create them after calling this method
+#' @param sd (SolutionDebugger) A SolutionDebugger instance
+#' @param price_scale  A new vector of price scalers to set.
+#' @param quantity_scale  A new vector of quantity scalers to set.
+#' @export
+reset_scales <- function(sd, price_scale, quantity_scale) {
+  sd$reset_scales(price_scale, quantity_scale)
+}
+
 #' Sets an array of prices into the model
 #' @details Sets an aray of prices into the model but does not immediately evaluate them.
 #' @param sd (SolutionDebugger) A SolutionDebugger instance

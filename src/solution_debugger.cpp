@@ -213,7 +213,8 @@ void SolutionDebugger::resetScales(const NumericVector& aPriceScale,
     smkts[i].setForecastDemand(aQuantityScale[i]);
   }
   LogEDFun Fnew(solnInfoSet, world, marketplace, period, false);
-  //std::swap(F, Fnew);
+  F.mfxscl = Fnew.mfxscl;
+  F.mxscl = Fnew.mxscl;
   F.scaleInitInputs(x);
   F(x, fx);
 }
