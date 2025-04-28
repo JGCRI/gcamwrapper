@@ -20,12 +20,24 @@ BOOST_LIB = os.environ["BOOST_LIB"]
 TBB_INCLUDE = os.environ["TBB_INCLUDE"]
 TBB_LIB = os.environ["TBB_LIB"]
 EIGEN_INCLUDE = os.environ["EIGEN_INCLUDE"]
-JAVA_INCLUDE = os.environ["JAVA_INCLUDE"]
-JAVA_PLATFORM_INCLUDE = JAVA_INCLUDE + '/' + os.uname()[0].lower()
-JAVA_LIB = os.environ["JAVA_LIB"]
+if 'HAVE_JAVA' in os.environ and os.environ['HAVE_JAVA'] == '0':
+    HAVE_JAVA = False
+    have_java_macro = '0'
+else:
+    HAVE_JAVA = True
+    have_java_macro = '1'
+    JAVA_INCLUDE = os.environ["JAVA_INCLUDE"]
+    JAVA_PLATFORM_INCLUDE = JAVA_INCLUDE + '/' + os.uname()[0].lower()
+    JAVA_LIB = os.environ["JAVA_LIB"]
 
+gcam_include_dirs = ['inst/include', GCAM_INCLUDE, BOOST_INCLUDE, TBB_INCLUDE, EIGEN_INCLUDE]
+gcam_lib_dirs = [GCAM_LIB, BOOST_LIB, TBB_LIB]
 # the exact set of libs to link will be platform specific due to boost
-gcam_libs = ['gcam', 'hector', 'jvm', 'tbb', 'tbbmalloc', 'tbbmalloc_proxy']
+gcam_libs = ['gcam', 'hector', 'tbb', 'tbbmalloc', 'tbbmalloc_proxy']
+if HAVE_JAVA:
+    gcam_include_dirs.extend([JAVA_INCLUDE, JAVA_PLATFORM_INCLUDE])
+    gcam_libs.append(JAVA_LIB) 
+    gcam_libs.append('jvm')
 gcam_compile_args = []
 gcam_link_args = []
 if platform.system() == "Windows" :
@@ -39,7 +51,9 @@ else :
     # ensure we use the correct c++ std
     gcam_compile_args += ['-std=c++17']
     # add rpath info to find the dynamic linked libs
-    gcam_link_args += ['-Wl,-rpath,'+JAVA_LIB, '-Wl,-rpath,'+BOOST_LIB, '-Wl,-rpath,'+TBB_LIB]
+    gcam_link_args += ['-Wl,-rpath,'+BOOST_LIB, '-Wl,-rpath,'+TBB_LIB]
+    if HAVE_JAVA:
+        gcam_link_args.append('-Wl,-rpath,'+JAVA_LIB)
 
 gcam_module = Extension(
     'gcam_module',
@@ -48,15 +62,16 @@ gcam_module = Extension(
         'src/query_processor_base.cpp',
         'src/set_data_helper.cpp',
         'src/get_data_helper.cpp'],
-    include_dirs=['inst/include', GCAM_INCLUDE, BOOST_INCLUDE, TBB_INCLUDE, EIGEN_INCLUDE, JAVA_INCLUDE, JAVA_PLATFORM_INCLUDE],
-    library_dirs=[GCAM_LIB, BOOST_LIB, TBB_LIB, JAVA_LIB],
+    include_dirs=gcam_include_dirs,
+    library_dirs=gcam_lib_dirs,
     libraries=gcam_libs,
     define_macros=[('NDEBUG', '1'),
                    ('BOOST_DATE_TIME_NO_LIB', '1'),
                    ('FUSION_MAX_VECTOR_SIZE', '30'),
                    ('BOOST_MATH_TR1_NO_LIB', '1'),
                    ('BOOST_PYTHON_STATIC_LIB', '1'),
-                   ('BOOST_NUMPY_STATIC_LIB', '1')],
+                   ('BOOST_NUMPY_STATIC_LIB', '1'),
+                   ('__HAVE_JAVA__', have_java_macro)],
     extra_link_args=gcam_link_args,
     language='c++',
     extra_compile_args = gcam_compile_args
@@ -81,7 +96,7 @@ try:
         description='Python API for GCAM',
         long_description=readme(),
         long_description_content_type='text/markdown',
-        python_requires='>=3.6.*, <4'
+        python_requires='>=3.6'
     )
 finally:
     os.unlink(os.path.join('gcamwrapper', 'query_library.yml'))
