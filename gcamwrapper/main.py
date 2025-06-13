@@ -49,9 +49,9 @@ class Gcam(gcam_module.gcam):
            # otherwise we will need to partition the calls
            # if we are not already at period the log messages may be confusing as it will
            # show as running period-1 then a seperate running period
-           super(Gcam, self).run_period_pre(period)
+           super(Gcam, self).run_period_pre(period, True)
            post_init_calback(self)
-           super(Gcam, self).run_period_post(period)
+           super(Gcam, self).run_period_post(period, True)
 
     def get_data(self, query, *args, **kwargs):
         """Queries for arbitrary data from a running instance of GCAM.

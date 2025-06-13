@@ -67,7 +67,7 @@ class gcam {
           mCurrentPeriod = aPeriod;
         }
 
-        void runPeriodPre(const int aPeriod ) {
+        void runPeriodPre(const int aPeriod, bool doInitPrices = true ) {
             if(!isInitialized) {
                 Interp::stop("GCAM did not successfully initialize.");
             }
@@ -90,7 +90,9 @@ class gcam {
 
     // Run the iteration of the model.
     scenario->mMarketplace->nullSuppliesAndDemands( aPeriod ); // initialize market demand to null
+    if(doInitPrices) {
     scenario->mMarketplace->init_to_last( aPeriod ); // initialize to last period's info
+    }
     scenario->mWorld->initCalc( aPeriod ); // call to initialize anything that won't change during calc
     scenario->mMarketplace->assignMarketSerialNumbers( aPeriod ); // give the markets their serial numbers for this period.
 
@@ -113,8 +115,8 @@ class gcam {
     mIsMidPeriod = true;
         }
 
-      void runPeriodPost(const int aPeriod) {
-          bool success = scenario->solve( aPeriod ); // solution uses Bisect and NR routine to clear markets
+      void runPeriodPost(const int aPeriod, bool doSolve = true) {
+          bool success = doSolve ? scenario->solve( aPeriod ) : true; // solution uses Bisect and NR routine to clear markets
 
     scenario->mWorld->postCalc( aPeriod );
 

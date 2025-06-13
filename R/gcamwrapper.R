@@ -46,9 +46,9 @@ run_period <- function(gcam, period = NULL, post_init_calback = NULL, ...) {
     # otherwise we will need to partition the calls
     # if we are not already at period the log messages may be confusing as it will
     # show as running period-1 then a seperate running period
-    gcam$run_period_pre(period)
+    gcam$run_period_pre(period, TRUE)
     post_init_calback(gcam, ...)
-    gcam$run_period_post(period)
+    gcam$run_period_post(period, TRUE)
   }
 
   invisible(gcam)
