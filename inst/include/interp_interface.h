@@ -39,15 +39,19 @@ class gcam_exception : public std::exception {
  * \details We couldn't just use Rcout directly because we need to add a flush
  *          for it to show up in a notebook in a timeley manner.
  */
-class RStdoutSink {
+class StdoutSink {
 public:
     typedef char char_type;
     typedef boost::iostreams::sink_tag category;
 
+    // hold a reference to the flush method
+    Rcpp::Function flush;
+
+    StdoutSink():flush("flush.console") {} 
+
     inline std::streamsize write(const char* aString, std::streamsize aSize) {
         Rprintf("%.*s", aSize, aString);
         // using R_FlushConsole() doesn't work for whatever reason
-        Rcpp::Function flush("flush.console");
         flush();
         return aSize;
     }
@@ -61,11 +65,6 @@ namespace Interp {
     using Rcpp::StringVector;
     using Rcpp::IntegerVector;
     using Rcpp::NumericMatrix;
-
-    inline std::ostream& getInterpCout() {
-        static boost::iostreams::stream<RStdoutSink> sRCout;
-        return sRCout;
-    }
 
     inline std::string extract(const Rcpp::String& aStr) {
         return aStr;
@@ -118,19 +117,24 @@ namespace Interp {
 
 /*!
  * \brief Wrap PySys_WriteStdout in a boost::iostreams so we can use a C++ interface.
- * \details This also bring us more inline with Rcpp and therefore keep a consisten abstract
+ * \details This also bring us more inline with Rcpp and therefore keep a consistent abstract
  *          Interp interface.
  */
-class PySysStdoutSink {
+class StdoutSink {
 public:
     typedef char char_type;
     typedef boost::iostreams::sink_tag category;
+
+    // hold a reference to the stdout object
+    PyObject* flush;
+
+    StdoutSink():flush(PySys_GetObject("stdout")) {} 
 
     inline std::streamsize write(const char* aString, std::streamsize aSize) {
         const std::streamsize MAX_PY_SIZE = 1000;
         std::streamsize actualSize = std::min(aSize, MAX_PY_SIZE);
         PySys_WriteStdout((boost::format("%%.%1%s") % actualSize).str().c_str(), aString);
-        boost::python::call_method<void>(PySys_GetObject("stdout"), "flush");
+        boost::python::call_method<void>(flush, "flush");
         return actualSize;
     }
 };
@@ -144,11 +148,6 @@ namespace Interp {
     }
     namespace bp = boost::python;
     namespace bnp = boost::python::numpy;
-
-    inline std::ostream& getInterpCout() {
-      static boost::iostreams::stream<PySysStdoutSink> sPyCout;
-      return sPyCout;
-    }
 
     inline std::string extract(const bp::str& aStr) {
         return bp::extract<std::string>(aStr);

@@ -32,8 +32,8 @@ Scenario* scenario;
 
 class gcam {
     public:
-        gcam(string aConfiguration):isInitialized(false), mCurrentPeriod(0), mIsMidPeriod(false) {
-            mCoutOrig = cout.rdbuf(Interp::getInterpCout().rdbuf());
+        gcam(string aConfiguration):isInitialized(false), mInterpOut(StdoutSink()), mCurrentPeriod(0), mIsMidPeriod(false){
+            loggerFactoryWrapper.setCout(&mInterpOut);
             initializeScenario(aConfiguration);
         }
         gcam(const gcam& aOther):isInitialized(aOther.isInitialized) {
@@ -45,7 +45,8 @@ class gcam {
             runner.reset(0);
             scenario = 0;
             Configuration::reset();
-            cout.rdbuf(mCoutOrig);
+            // reset the cout if somehow the logger needs to outlive gcam
+            loggerFactoryWrapper.setCout(&std::cout);
         }
 
         void runPeriod(const int aPeriod ) {
@@ -235,7 +236,7 @@ class gcam {
 
     private:
         bool isInitialized;
-        std::streambuf* mCoutOrig;
+        boost::iostreams::stream<StdoutSink> mInterpOut;
         int mCurrentPeriod;
         bool mIsMidPeriod;
         LoggerFactoryWrapper loggerFactoryWrapper;
