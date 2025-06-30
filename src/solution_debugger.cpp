@@ -45,7 +45,7 @@ SolutionDebugger::SolutionDebugger(World *w, Marketplace *m, SolutionInfoSet &si
   std::vector<SolutionInfo> smkts(solnInfoSet.getSolvableSet());
   for(unsigned int i = 0; i < smkts.size(); ++i) {
     x[i] = smkts[i].getPrice();
-    marketNames[i] = smkts[i].getName().c_str();
+    marketNames[i] = smkts[i].getName().get().c_str();
   }
 
   F.scaleInitInputs(x);
