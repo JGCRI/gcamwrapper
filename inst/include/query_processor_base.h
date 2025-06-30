@@ -38,6 +38,8 @@ protected:
 
   AMatchesValue* createMatchesAny() const;
 
+  int convertToEnum(const std::string& aEnumType, const std::string& aXMLName) const;
+
   virtual AMatchesValue* parsePredicate( const std::vector<std::string>& aFilterOptions, const int aCol, const bool aIsRead ) const;
 
   virtual AMatchesValue* wrapPredicate(AMatchesValue* aToWrap, const std::string& aDataName, const bool aIsInt);
