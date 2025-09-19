@@ -27,7 +27,7 @@ else:
     HAVE_JAVA = True
     have_java_macro = '1'
     JAVA_INCLUDE = os.environ["JAVA_INCLUDE"]
-    JAVA_PLATFORM_INCLUDE = JAVA_INCLUDE + '/' + os.uname()[0].lower()
+    JAVA_PLATFORM_INCLUDE = JAVA_INCLUDE + '/' + platform.system().lower()
     JAVA_LIB = os.environ["JAVA_LIB"]
 
 gcam_include_dirs = ['inst/include', GCAM_INCLUDE, BOOST_INCLUDE, TBB_INCLUDE, EIGEN_INCLUDE]
