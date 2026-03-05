@@ -135,7 +135,7 @@ AMatchesValue* SetDataHelper::parsePredicate( const std::vector<std::string>& aF
         StringVector enumNames(getDataFrameAt<StringVector>(mData, aCol));
         IntegerVector enumInd(createVector<int, IntegerVector>(len));
         for(int i = 0; i < len; ++i) {
-            string currName(enumNames[i]);
+            string currName = Interp::extract(enumNames[i]);
             enumInd[i] = convertToEnum(aFilterOptions[1], currName);
         }
         matcher = new IntVecEquals(enumInd, mRow);

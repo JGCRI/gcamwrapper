@@ -69,6 +69,28 @@ set_data <- function(gcam, data, query, query_params = list()) {
   gcam$set_data(data, query)
 }
 
+#' Set some aribtrary data into GCAM using an optimized routine
+#' @details Note this optimized routine is only suitable for exact matching and could be
+#' slower than the general `set_data` in cases where the given data matches a small fraction
+#' of possible values in GCAM.  Under the hood this method essentially uses the given query
+#' to perform a `get_data` call, then does a left join (essentially, using hashes for speed)
+#' on those queried values with the supplied data frame to match in the new values to set
+#' back into GCAM.
+#' @param gcam (gcam) An initialized GCAM instance
+#' @param data (data.frame) A data.frame with the data to set
+#' @param query (string) A GCAM fusion-ish search path to determine where to set the data.
+#' @param query_params (list[string] -> array(string)) User options to translate placeholder
+#' @return GCAM instance
+#' @export
+set_data_fast <- function(gcam, data, query, query_params = list()) {
+  # replace any potential place holders in the query with the query params
+  # note for set_data_fast we use the query to essentially do a get_data call
+  # so call apply_query_params accordingly
+  query <- apply_query_params(query, query_params, TRUE)
+
+  gcam$set_data_fast(data, query)
+}
+
 #' Get some arbitrary data out of GCAM
 #' @details Use GCAM Fusion to get some table of data out of GCAM.
 #' @param gcam (gcam) An initialized GCAM instance

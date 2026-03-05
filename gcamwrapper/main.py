@@ -130,6 +130,49 @@ class Gcam(gcam_module.gcam):
             data_dict[key] = data_as_numpy
         super(Gcam, self).set_data(data_dict, query)
 
+    def set_data_fast(self, data_df, query, *args, **kwargs):
+        """Set some aribtrary data into GCAM using an optimized routine
+           Note this optimized routine is only suitable for exact matching and could be
+           slower than the general `set_data` in cases where the given data matches a small fraction
+           of possible values in GCAM.  Under the hood this method essentially uses the given query
+           to perform a `get_data` call, then does a left join (essentially, using hashes for speed)
+           on those queried values with the supplied data frame to match in the new values to set
+           back into GCAM.
+
+        :param data_df:     DataFrame of data to set
+        :type data_df:      DataFrame
+        :param query:   GCAM fusion query
+        :type query:    str
+        :param *args: User options to translate placeholder expressions which will
+                      will be added to the kwargs as dict(arg: None)
+        :type *args:  str
+        :param **kargs: User options to translate placeholder expressions which will
+                        get combined with *args and passed on to apply_query_params
+        :type **kargs:  key = arrary(str)
+
+        :returns:       DataFrame with the query results.
+
+        """
+
+        # fold args into kwargs by using the value as the key and the implict value is None
+        for arg in args:
+            kwargs[arg] = None
+
+        # replace any potential place holders in the query with the query params
+        query = apply_query_params(query, kwargs, True)
+
+        # we need to transform the data from a DataFrame to a dict where the column
+        # name key maps to the column as a numpy array
+        data_dict = dict()
+        for key, value in data_df.items():
+            data_as_numpy = value.to_numpy()
+            if data_as_numpy.dtype == np.int64:
+                data_as_numpy = data_as_numpy.astype(np.int32)
+                if key != "year" and key != "period":
+                    warnings.warn(f"Implict conversion to int32 for {key} may result in loss of data")
+            data_dict[key] = data_as_numpy
+        super(Gcam, self).set_data_fast(data_dict, query)
+
     def get_current_period(self):
         """Get the last run GCAM model period
 

@@ -36,7 +36,7 @@ gcam_lib_dirs = [GCAM_LIB, BOOST_LIB, TBB_LIB]
 gcam_libs = ['gcam', 'hector', 'tbb', 'tbbmalloc', 'tbbmalloc_proxy']
 if HAVE_JAVA:
     gcam_include_dirs.extend([JAVA_INCLUDE, JAVA_PLATFORM_INCLUDE])
-    gcam_libs.append(JAVA_LIB) 
+    gcam_lib_dirs.append(JAVA_LIB) 
     gcam_libs.append('jvm')
 gcam_compile_args = []
 gcam_link_args = []
@@ -61,6 +61,7 @@ gcam_module = Extension(
         'src/solution_debugger.cpp',
         'src/query_processor_base.cpp',
         'src/set_data_helper.cpp',
+        'src/set_data_fast_helper.cpp',
         'src/get_data_helper.cpp'],
     include_dirs=gcam_include_dirs,
     library_dirs=gcam_lib_dirs,
