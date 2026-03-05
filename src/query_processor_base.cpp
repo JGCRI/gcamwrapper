@@ -4,6 +4,9 @@
 
 #include "util/base/include/gcam_fusion.hpp"
 
+// includes to get enums
+#include "containers/include/national_account.h"
+
 using namespace std;
 using namespace Interp;
 
@@ -40,6 +43,29 @@ AMatchesValue* QueryProcessorBase::createMatchesAny() const {
 }
 
 /*!
+ * \brief Convert an "XML name" to the enum representation.
+ * \details We are currently only supporting some enum "types".  We will
+ *          rely on GCAM having an `enumToXMLName` or equivalent method to
+ *          do the actual translation.
+ * \param aEnumType The type of enum we are trying to translate.
+ * \param aXMLName The string to be converted.
+ * \return The enum converted to index to be generically utilized to index into
+ *         a vector of enum values.
+ */
+int QueryProcessorBase::convertToEnum(const std::string& aEnumType, const std::string& aXMLName) const {
+    if(aEnumType == "AccountType") {
+        for(int i = 0; i < NationalAccount::AccountType::END; ++i) {
+            if(aXMLName == NationalAccount::enumToXMLName(static_cast<NationalAccount::AccountType>(i))) {
+                return i;
+            }
+        }
+        Interp::stop("Could not match "+aXMLName+ " to enum in type: "+aEnumType);
+    }
+    Interp::stop("Unknown enum type: "+aEnumType);
+    return -1;
+}
+
+/*!
  * \brief Parse individual components of a filter.
  * \details The base class implementation basically provides the standard GCAM
  *          fusion predicates.  However MatchesAny is also available here as a
@@ -59,7 +85,11 @@ AMatchesValue* QueryProcessorBase::parsePredicate( const std::vector<std::string
     // [1] = match type
     // [2:] = match type options
     AMatchesValue* matcher = 0;
-        if( aFilterOptions[ 1 ] == "StringEquals" ) {
+        if( aFilterOptions[ 0 ] == "EnumFilter" ) {
+            int enumAsIndex = convertToEnum(aFilterOptions[1], aFilterOptions[2]);
+            matcher = new IntEquals(enumAsIndex);
+        }
+        else if( aFilterOptions[ 1 ] == "StringEquals" ) {
             matcher = new StringEquals( aFilterOptions[ 2 ] );
         }
         else if( aFilterOptions[ 1 ] == "StringRegexMatches" ) {
@@ -147,7 +177,7 @@ FilterStep* QueryProcessorBase::parseFilterStepStr( const std::string& aFilterSt
         // set the filter type and wrap the predicate to enable special get data
         // functionality if the `+` option was set
         FilterStep* filterStep = 0;
-        if( filterOptions[ 0 ] == "IndexFilter" ) {
+        if( filterOptions[ 0 ] == "EnumFilter" || filterOptions[ 0 ] == "IndexFilter" ) {
             if(isRead) {
                 matcher = wrapPredicate(matcher, "index", true);
             }

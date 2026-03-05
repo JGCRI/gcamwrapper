@@ -18,6 +18,9 @@ public:
   virtual bool matchesString( const std::string& aStrToTest ) const {
     return mStr[mRow] == aStrToTest;
   }
+  virtual bool isExactMatch() const {
+      return true;
+  }
 protected:
   const Interp::StringVector mStr;
   const int& mRow;
@@ -38,6 +41,9 @@ public:
   virtual ~IntVecEquals() {}
   virtual bool matchesInt( const int aIntToTest ) const {
     return mInt[mRow] == aIntToTest;
+  }
+  virtual bool isExactMatch() const {
+      return true;
   }
 protected:
   const Interp::IntegerVector mInt;
@@ -123,6 +129,16 @@ AMatchesValue* SetDataHelper::parsePredicate( const std::vector<std::string>& aF
     AMatchesValue* matcher = 0;
     if(!aIsRead) {
         matcher = QueryProcessorBase::parsePredicate(aFilterOptions, aCol, aIsRead);
+    }
+    else if( aFilterOptions[ 0 ] == "EnumFilter" ) {
+        int len = getDataFrameNumRows(mData);
+        StringVector enumNames(getDataFrameAt<StringVector>(mData, aCol));
+        IntegerVector enumInd(createVector<int, IntegerVector>(len));
+        for(int i = 0; i < len; ++i) {
+            string currName = Interp::extract(enumNames[i]);
+            enumInd[i] = convertToEnum(aFilterOptions[1], currName);
+        }
+        matcher = new IntVecEquals(enumInd, mRow);
     }
     else if( aFilterOptions[ 1 ] == "StringEquals" ) {
         matcher = new StringVecEquals(getDataFrameAt<StringVector>(mData, aCol), mRow);

@@ -29,5 +29,5 @@ we do not attempt to keep track of if those model periods are "dirty"
 such as if a user has called `set_data` in such a way that would invalidate
 that solution.  Users can supply a call back function which will be called
 after initCalc and before solving.  Such a call back could be necessary if
-if data a uses wanted to set would have been overridden during initializations.
+if data a user wanted to set would have been overridden during initializations.
 }

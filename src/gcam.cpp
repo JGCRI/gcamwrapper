@@ -21,6 +21,7 @@
 #include "containers/include/world.h"
 
 #include "set_data_helper.h"
+#include "set_data_fast_helper.h"
 #include "get_data_helper.h"
 #include "solution_debugger.h"
 
@@ -67,7 +68,7 @@ class gcam {
           mCurrentPeriod = aPeriod;
         }
 
-        void runPeriodPre(const int aPeriod ) {
+        void runPeriodPre(const int aPeriod, bool doInitPrices = true ) {
             if(!isInitialized) {
                 Interp::stop("GCAM did not successfully initialize.");
             }
@@ -90,7 +91,9 @@ class gcam {
 
     // Run the iteration of the model.
     scenario->mMarketplace->nullSuppliesAndDemands( aPeriod ); // initialize market demand to null
+    if(doInitPrices) {
     scenario->mMarketplace->init_to_last( aPeriod ); // initialize to last period's info
+    }
     scenario->mWorld->initCalc( aPeriod ); // call to initialize anything that won't change during calc
     scenario->mMarketplace->assignMarketSerialNumbers( aPeriod ); // give the markets their serial numbers for this period.
 
@@ -113,8 +116,8 @@ class gcam {
     mIsMidPeriod = true;
         }
 
-      void runPeriodPost(const int aPeriod) {
-          bool success = scenario->solve( aPeriod ); // solution uses Bisect and NR routine to clear markets
+      void runPeriodPost(const int aPeriod, bool doSolve = true) {
+          bool success = doSolve ? scenario->solve( aPeriod ) : true; // solution uses Bisect and NR routine to clear markets
 
     scenario->mWorld->postCalc( aPeriod );
 
@@ -153,6 +156,13 @@ class gcam {
           Interp::stop("GCAM did not successfully initialize.");
         }
         SetDataHelper helper(aData, aHeader);
+        helper.run(runner->getInternalScenario());
+      }
+      void setDataFast(const Interp::DataFrame& aData, const std::string& aHeader) {
+        if(!isInitialized) {
+          Interp::stop("GCAM did not successfully initialize.");
+        }
+        SetDataFastHelper helper(aData, aHeader);
         helper.run(runner->getInternalScenario());
       }
       Interp::DataFrame getData(const std::string& aHeader) {
@@ -324,6 +334,7 @@ RCPP_MODULE(gcam_module) {
         .method("run_period_post",        &gcam::runPeriodPost,         "run to model period solve and post")
         .method("set_data", &gcam::setData, "set data")
         .method("get_data", &gcam::getData, "get data")
+        .method("set_data_fast", &gcam::setDataFast, "set data_fast")
         .method("create_solution_debugger", &gcam::createSolutionDebugger, "create solution debugger")
         .method("get_current_period", &gcam::getCurrentPeriod, "get the last run model period")
         .method("convert_period_to_year", &gcam::convertPeriodToYear, "convert a GCAM model period to year")
@@ -362,6 +373,7 @@ BOOST_PYTHON_MODULE(gcam_module) {
         .def("run_period_post",        &gcam::runPeriodPost,         "run to model period solve and post")
         .def("set_data", &gcam::setData, "set data")
         .def("get_data", &gcam::getData, "get data")
+        .def("set_data_fast", &gcam::setDataFast, "set data_fast")
         .def("create_solution_debugger", &gcam::createSolutionDebugger, "create solution debugger")
         .def("get_current_period", &gcam::getCurrentPeriod, "get the last run model period")
         .def("convert_period_to_year", &gcam::convertPeriodToYear, "convert a GCAM model period to year")
