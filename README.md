@@ -21,7 +21,7 @@ export CXX=g++ -fPIC
 
 To create a static library you can run the following command:
 ```bash
-ar -ru libgcam.a exe/build/objects.build/Release/objects.build/Objects-normal/x86_64/*o
+ar -ru libgcam.a exe/build/objects.build/Release/objects.build/Objects-normal/arm64/*o
 ```
 
 And for the sake of consistency with `Makefile` move them and libhector into:
