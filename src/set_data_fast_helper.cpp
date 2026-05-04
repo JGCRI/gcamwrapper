@@ -47,7 +47,7 @@ public:
         return matches;
     }
     virtual size_t getHash() const {
-        return boost::hash_value<std::string>(mCurrValue);
+        return boost::hash_value(mCurrValue);
     }
     private:
     //! A temporary holding the last matched value which may get copied
@@ -163,7 +163,7 @@ AMatchesValue* SetDataFastHelper::parsePredicate( const std::vector<std::string>
             StringVector strVals(getDataFrameAt<StringVector>(mData, aCol));
             for(int i = 0; i < len; ++i) {
                 std::string currVal = Interp::extract(strVals[i]);
-                retHash[i] = boost::hash_value<std::string>(currVal);
+                retHash[i] = boost::hash_value(currVal);
             }
         }
         else if( aFilterOptions[ 0 ] == "YearFilter" || aFilterOptions[ 0 ] == "IndexFilter" ) {
