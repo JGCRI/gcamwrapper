@@ -10,7 +10,7 @@ get_current_period(gcam)
 \item{gcam}{(gcam) An initialized GCAM instance}
 }
 \value{
-(integer) The last period used in `run_to_period` wheter it succeeded or failed
+(integer) The last period used in `run_to_period` whether it succeeded or failed
 }
 \description{
 Get the last run GCAM model period
