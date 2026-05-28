@@ -125,7 +125,7 @@ library(ggplot2)
 # appropriate working directory
 g <- create_and_initialize("configuration_ref.xml", "/Users/pralitp/model/gcam-core-git/exe")
 # Run the model up to period 5, the year 2020
-run_to_period(g, 5L)
+run_period(g, 5L)
 
 # Do a simple experiment: see how CO2 emissions change after arbitrarily changing
 # the GDP
@@ -213,7 +213,7 @@ double_check <- get_data(g, labor_prod_query, list("region", "year" = c("=", 202
 
 # we have only set the parameters at this point, to see how it effects
 # results we must re-run period 5
-run_to_period(g, 5L)
+run_period(g, 5L)
 
 # Get the CO2 emissions again and see how they have changed
 co2_change <- get_data(g, co2_query, query_params)
@@ -290,7 +290,7 @@ import gcamwrapper
 # appropriate working directory
 g = gcamwrapper.Gcam("configuration_ref.xml", "C:/GCAM/gcam-core/exe")
 # Run the model up to period 5, the year 2020
-g.run_to_period(5)
+g.run_period(5)
 
 # Do a simple experiment: see how CO2 emissions change after arbitrarily changing
 # the GDP
@@ -363,7 +363,7 @@ double_check = g.get_data(labor_prod_query, "region", "year"=["=", 2020])
 
 # we have only set the parameters at this point, to see how it effects
 # results we must re-run period 5
-g.run_to_period(5)
+g.run_period(5)
 
 # Get the CO2 emissions again and see how they have changed
 co2_change = g.get_data(co2_query, **query_params)

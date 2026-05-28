@@ -176,7 +176,7 @@ class Gcam(gcam_module.gcam):
     def get_current_period(self):
         """Get the last run GCAM model period
 
-        :returns: The last period used in `run_to_period` wheter it succeeded or failed
+        :returns: The last period used in `run_period` whether it succeeded or failed
         """
 
         return super(Gcam, self).get_current_period()
@@ -184,7 +184,7 @@ class Gcam(gcam_module.gcam):
     def get_current_year(self):
         """Get the last run GCAM model year
 
-        :returns: The last period used in `run_to_period` wheter it succeeded or failed but converted to year
+        :returns: The last period used in `run_period` whether it succeeded or failed but converted to year
         """
 
         return self.convert_period_to_year(self.get_current_period())
