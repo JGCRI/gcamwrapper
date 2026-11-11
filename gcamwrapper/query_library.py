@@ -1,7 +1,7 @@
 import yaml
 import warnings
 import re
-import pkg_resources
+from importlib import resources
 
 def read_yaml(yaml_file):
     '''Read a YAML file.
@@ -16,7 +16,7 @@ def read_yaml(yaml_file):
         return yaml.load(yml, Loader=yaml.FullLoader)
 
 '''The parsed query file included with the package'''
-PACKAGE_QUERIES = yaml.load(pkg_resources.resource_stream(__name__, 'query_library.yml'), Loader=yaml.FullLoader)
+PACKAGE_QUERIES = yaml.load(resources.files(__package__).joinpath('query_library.yml').read_text(), Loader=yaml.FullLoader)
 
 class Query(str):
     '''A Simple extension to str to be able to associate units meta data'''
@@ -32,7 +32,7 @@ def get_query(*args, query_file=None):
     '''Look up a query from a YAML file.
        The YAML query files will often be organized into nested categories
        so users must provide the full path as individual strings such as:
-       \code{get_query("emissions", "co2_emissions")}
+       `get_query("emissions", "co2_emissions")`
 
     :param query_file: The path to a YAML file to read if not None otherwise
                        the package query file will be used.
@@ -53,7 +53,7 @@ def get_query(*args, query_file=None):
         try:
             query = query[path]
         except KeyError:
-            raise(f"Could not find query:  {args}") 
+            raise KeyError(f"Could not find query:  {args}") from None
 
     if len(query) == 0:
         raise Exception(f"Could not find query:  {args}")
@@ -84,8 +84,8 @@ def get_query(*args, query_file=None):
 
 def find_placeholders(query_str):
     '''Find all placeholder in a raw query and return them in a list.
-       Find query placeholders of the form \code{'{tag@type}'} and put them into a
-       dict such as \code{dict('tag1': 'name', 'tag2': 'year')} for instance.
+       Find query placeholders of the form `'{tag@type}'` and put them into a
+       dict such as `dict('tag1': 'name', 'tag2': 'year')` for instance.
 
     :param query_str: A raw query string
     :type query_str: str
@@ -252,8 +252,8 @@ def parse_str_query_param(param_operands, is_get_data):
 
 def apply_query_params(query, query_params, is_get_data):
     '''Translate a raw query looked up from a query library into a GCAM Fusion query.
-       Raw queries will contain placeholders such as \code{'{arg_tag@arg_type}'} and those
-       will get replaced user supplied filter options supplied as a list in \code{query_params
+       Raw queries will contain placeholders such as `'{arg_tag@arg_type}'` and those
+       will get replaced user supplied filter options supplied as a list in `query_params`
        where we match those keys to `arg_type`.  If `arg_type` is "name" then `parse_str_query_param`
        will be used to process the value of query_params[[arg_tag]] and if "year" then
        `parse_int_query_param` is used.

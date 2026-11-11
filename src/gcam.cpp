@@ -117,6 +117,14 @@ class gcam {
         }
 
       void runPeriodPost(const int aPeriod, bool doSolve = true) {
+          // Values may have been set since runPeriodPre calculated supplies and demands.
+          // The solver starts from what is in the marketplace and stops at once if that
+          // already clears, as it does when a solved period is run again from its own
+          // prices, so recalculate first or such a change would never be seen.
+          if( mIsMidPeriod ) {
+              scenario->mMarketplace->nullSuppliesAndDemands( aPeriod );
+              scenario->mWorld->calc( aPeriod );
+          }
           bool success = doSolve ? scenario->solve( aPeriod ) : true; // solution uses Bisect and NR routine to clear markets
 
     scenario->mWorld->postCalc( aPeriod );
