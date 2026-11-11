@@ -1,7 +1,7 @@
 import yaml
 import warnings
 import re
-import pkg_resources
+from importlib import resources
 
 def read_yaml(yaml_file):
     '''Read a YAML file.
@@ -16,7 +16,7 @@ def read_yaml(yaml_file):
         return yaml.load(yml, Loader=yaml.FullLoader)
 
 '''The parsed query file included with the package'''
-PACKAGE_QUERIES = yaml.load(pkg_resources.resource_stream(__name__, 'query_library.yml'), Loader=yaml.FullLoader)
+PACKAGE_QUERIES = yaml.load(resources.files(__package__).joinpath('query_library.yml').read_text(), Loader=yaml.FullLoader)
 
 class Query(str):
     '''A Simple extension to str to be able to associate units meta data'''
@@ -53,7 +53,7 @@ def get_query(*args, query_file=None):
         try:
             query = query[path]
         except KeyError:
-            raise(f"Could not find query:  {args}") 
+            raise KeyError(f"Could not find query:  {args}") from None
 
     if len(query) == 0:
         raise Exception(f"Could not find query:  {args}")

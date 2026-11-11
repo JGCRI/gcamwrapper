@@ -97,7 +97,7 @@ try:
         description='Python API for GCAM',
         long_description=readme(),
         long_description_content_type='text/markdown',
-        python_requires='>=3.6'
+        python_requires='>=3.9'
     )
 finally:
     os.unlink(os.path.join('gcamwrapper', 'query_library.yml'))
